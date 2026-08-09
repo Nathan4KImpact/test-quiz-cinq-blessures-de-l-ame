@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Admin — Test des 5 blessures de l'âme</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+<div id="admin-app">
+
+  <!-- ===================== LOGIN ===================== -->
+  <section id="admin-login" class="admin-screen active">
+    <div class="card login-card">
+      <p class="dove" aria-hidden="true">🕊️</p>
+      <h1>Espace admin</h1>
+      <p class="intro">
+        Connecte-toi pour consulter les résultats de toutes les personnes
+        ayant passé le test, à tout moment.
+      </p>
+      <form id="login-form">
+        <label for="admin-password">Mot de passe</label>
+        <input type="password" id="admin-password" name="password" autocomplete="current-password" required />
+        <button type="submit" class="btn btn-primary">Se connecter</button>
+        <p id="login-error" class="form-error" hidden></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== TABLEAU DE BORD ===================== -->
+  <section id="admin-dashboard" class="admin-screen">
+    <header class="admin-header">
+      <div>
+        <h1>Tableau de bord</h1>
+        <p class="admin-subtitle">Toutes les passations du test.</p>
+      </div>
+      <button type="button" id="logout-btn" class="btn btn-ghost">Se déconnecter</button>
+    </header>
+
+    <div class="card admin-summary" id="admin-summary"><!-- generated in JS --></div>
+
+    <div class="card">
+      <div class="table-toolbar">
+        <input type="search" id="search-input" placeholder="Rechercher un nom, un email, une ville…" />
+      </div>
+      <div class="table-scroll">
+        <table id="participants-table" class="admin-table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Email</th>
+              <th>Ville</th>
+              <th>Dernier test</th>
+              <th>Passations</th>
+              <th>Blessure dominante</th>
+            </tr>
+          </thead>
+          <tbody id="participants-tbody"></tbody>
+        </table>
+      </div>
+      <p id="empty-state" class="empty-state" hidden>Aucune passation enregistrée pour le moment.</p>
+    </div>
+  </section>
+
+  <!-- ===================== DÉTAIL PARTICIPANT ===================== -->
+  <section id="admin-detail" class="admin-screen">
+    <button type="button" id="back-btn" class="btn btn-ghost back-btn">← Retour au tableau de bord</button>
+
+    <div class="card" id="participant-info"><!-- generated in JS --></div>
+
+    <div class="card">
+      <div class="range-toolbar">
+        <h3>Évolution des scores</h3>
+        <div class="range-buttons" id="range-buttons">
+          <button type="button" data-range="6" class="range-btn">6 mois</button>
+          <button type="button" data-range="12" class="range-btn">1 an</button>
+          <button type="button" data-range="36" class="range-btn">3 ans</button>
+          <button type="button" data-range="60" class="range-btn">5 ans</button>
+          <button type="button" data-range="all" class="range-btn active">Tout</button>
+        </div>
+      </div>
+      <div id="evolution-chart" class="evolution-chart"></div>
+      <div class="legend" id="evolution-legend"></div>
+    </div>
+
+    <div class="card">
+      <h3>Détail des passations</h3>
+      <div class="table-scroll">
+        <table class="admin-table" id="attempts-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Trahison</th>
+              <th>Rejet</th>
+              <th>Abandon</th>
+              <th>Humiliation</th>
+              <th>Injustice</th>
+              <th>Dominante</th>
+            </tr>
+          </thead>
+          <tbody id="attempts-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

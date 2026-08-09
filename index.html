@@ -26,21 +26,49 @@
       </blockquote>
 
       <p class="intro">
-        Ce test t'aide à identifier la ou les blessures émotionnelles dont tu
-        es porteuse, ainsi que les comportements que tu adoptes le plus
-        souvent, afin de te proposer ensuite un accompagnement psychologique
-        et spirituel adapté.
+        Ce test te permet d'explorer les blessures émotionnelles qui peuvent
+        encore influencer ton vécu, ainsi que les masques et comportements
+        que tu as développés au fil de ton parcours. Il t'offre une première
+        clé de compréhension de ton fonctionnement et permet d'identifier les
+        besoins sur lesquels un accompagnement psychologique et spirituel
+        personnalisé pourra s'appuyer.
       </p>
 
       <ul class="facts">
         <li><strong>50</strong> affirmations, réparties en 5 blessures</li>
         <li><strong>5 à 8 minutes</strong> pour répondre en toute sincérité</li>
-        <li>Réponses <strong>traitées uniquement sur ton appareil</strong></li>
+        <li>Tu peux <strong>refaire le test</strong> à tout moment pour suivre ton évolution</li>
       </ul>
 
       <form id="start-form">
-        <label for="first-name">Ton prénom <span class="optional">(facultatif)</span></label>
-        <input type="text" id="first-name" name="first-name" autocomplete="given-name" placeholder="Ex. Marie" maxlength="60" />
+        <label for="first-name">Prénom</label>
+        <input type="text" id="first-name" name="first-name" autocomplete="given-name" placeholder="Ex. Marie" maxlength="60" required />
+
+        <label for="last-name">Nom</label>
+        <input type="text" id="last-name" name="last-name" autocomplete="family-name" placeholder="Ex. Dupont" maxlength="60" required />
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
+
+        <label for="phone">Téléphone <span class="optional">(facultatif)</span></label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="06 12 34 56 78" maxlength="30" />
+
+        <div class="form-row">
+          <div class="form-col">
+            <label for="city">Ville</label>
+            <input type="text" id="city" name="city" autocomplete="address-level2" placeholder="Ex. Lyon" maxlength="80" />
+          </div>
+          <div class="form-col form-col-narrow">
+            <label for="postal-code">Code postal</label>
+            <input type="text" id="postal-code" name="postal-code" autocomplete="postal-code" placeholder="69000" maxlength="12" />
+          </div>
+        </div>
+
+        <label class="consent-label" for="consent">
+          <input type="checkbox" id="consent" name="consent" required />
+          <span>J'accepte que mes réponses et mes coordonnées soient enregistrées afin qu'un accompagnement psychologique et spirituel personnalisé puisse m'être proposé, et pour pouvoir suivre l'évolution de mes résultats dans le temps.</span>
+        </label>
+
         <button type="submit" class="btn btn-primary">Commencer le test</button>
       </form>
 
@@ -61,7 +89,6 @@
           <div id="progress-fill" class="progress-fill"></div>
         </div>
         <div class="quiz-meta">
-          <span id="wound-pill" class="wound-pill">Trahison</span>
           <span id="progress-label" class="progress-label">Question 1 / 50</span>
         </div>
       </header>
@@ -88,8 +115,11 @@
       <div class="card results-header">
         <p class="dove" aria-hidden="true">🕊️</p>
         <h1 id="results-title">Tes résultats</h1>
+        <p id="attempt-meta" class="attempt-meta" hidden></p>
         <blockquote class="verse verse-small">
-          « …comme prospère l'état de ton âme. » <cite>3 Jean 1:2</cite>
+          « Bien-aimée, je souhaite que tu prospères à tous égards et sois en
+          bonne santé, comme prospère l'état de ton âme. »
+          <cite>3 Jean 1:2</cite>
         </blockquote>
       </div>
 
@@ -111,6 +141,7 @@
         </div>
       </div>
 
+      <p class="section-note">Pour cette première lecture, seule(s) ta ou tes blessure(s) la/les plus marquée(s) sont détaillées ci-dessous.</p>
       <div id="wound-accordion" class="accordion"><!-- generated in JS --></div>
 
       <div class="card cta-card">
