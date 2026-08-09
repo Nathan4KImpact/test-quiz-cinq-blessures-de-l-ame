@@ -42,6 +42,19 @@ Comme il s'agit d'un site 100 % statique, il peut être déployé tel quel sur
 GitHub Pages, Netlify, Vercel ou tout hébergeur de fichiers statiques — sans
 étape de build.
 
+### Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNathan4KImpact%2Ftest-quiz-cinq-blessures-de-l-ame%2Ftree%2Fclaude%2Fleaman-test-web-app-ahuy0e&project-name=test-5-blessures-de-lame&repository-name=test-5-blessures-de-lame)
+
+Ou manuellement, sans passer par le bouton :
+
+1. Se connecter sur [vercel.com](https://vercel.com) avec le compte GitHub qui a accès à ce dépôt.
+2. **Add New… → Project**, puis importer `Nathan4KImpact/test-quiz-cinq-blessures-de-l-ame`.
+3. Laisser les réglages par défaut (aucun *build command*, aucun *output directory* nécessaire — site statique) et cliquer **Deploy**.
+4. Vercel fournit une URL `*.vercel.app` immédiatement ; un nom de domaine personnalisé peut être ajouté ensuite dans **Project → Settings → Domains**.
+
+Un fichier `vercel.json` minimal est inclus (URLs propres, pas de slash final).
+
 ## Structure
 
 ```
