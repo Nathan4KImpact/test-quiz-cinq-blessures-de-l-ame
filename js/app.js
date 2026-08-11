@@ -272,11 +272,13 @@
         signal: controller.signal,
       });
       window.clearTimeout(timeout);
+      const data = await res.json().catch(() => null);
       if (res.ok) {
-        const data = await res.json();
         if (data && typeof data.attemptNumber === "number") {
           state.attemptNumber = data.attemptNumber;
         }
+      } else {
+        console.warn("Échec de l'enregistrement de la passation :", res.status, data);
       }
     } catch (e) {
       // Hors-ligne ou serveur indisponible : on affiche quand même les résultats
