@@ -1,5 +1,5 @@
 const { supabaseRequest } = require("./_lib/supabase");
-const { computeScores, isValidAnswers } = require("./_lib/scoring");
+const { computeScores, isValidAnswers, describeAnswersProblem } = require("./_lib/scoring");
 
 // Volontairement permissif : aligné sur la validation native du navigateur
 // (input type="email"), qui n'exige pas de point dans le domaine. Un
@@ -67,7 +67,9 @@ module.exports = async (req, res) => {
   if (!lastName) validationErrors.push("nom manquant");
   if (!isValidEmail(email)) validationErrors.push("email invalide");
   if (!consent) validationErrors.push("consentement manquant");
-  if (!isValidAnswers(answers)) validationErrors.push("réponses invalides (attendu : 50 valeurs 1/2/3)");
+  if (!isValidAnswers(answers)) {
+    validationErrors.push(`réponses invalides : ${describeAnswersProblem(answers)}`);
+  }
 
   if (validationErrors.length > 0) {
     console.error("submit validation failed", {
