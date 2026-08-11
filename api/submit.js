@@ -1,8 +1,13 @@
 const { supabaseRequest } = require("./_lib/supabase");
 const { computeScores, isValidAnswers } = require("./_lib/scoring");
 
+// Volontairement permissif : aligné sur la validation native du navigateur
+// (input type="email"), qui n'exige pas de point dans le domaine. Un
+// contrôle serveur plus strict que le contrôle client rejetterait à tort
+// des emails que l'utilisateur a pourtant pu saisir et valider dans le
+// formulaire.
 function isValidEmail(email) {
-  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+$/.test(email);
 }
 
 function readRawBody(req) {
