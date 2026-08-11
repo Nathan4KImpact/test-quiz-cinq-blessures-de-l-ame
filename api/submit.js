@@ -5,16 +5,38 @@ function isValidEmail(email) {
   return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function parseBody(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-  if (typeof req.body === "string") {
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (chunk) => (data += chunk));
+    req.on("end", () => resolve(data));
+    req.on("error", reject);
+  });
+}
+
+async function parseBody(req) {
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
+  if (typeof req.body === "string" && req.body.length > 0) {
     try {
       return JSON.parse(req.body);
     } catch (e) {
       return null;
     }
   }
-  return null;
+  // Filet de sécurité : si le corps n'a pas été pré-parsé par le runtime
+  // (ex. Content-Type inattendu), on le lit nous-mêmes depuis le flux,
+  // avec un délai de sécurité pour ne jamais bloquer la fonction.
+  try {
+    const raw = await Promise.race([
+      readRawBody(req),
+      new Promise((resolve) => setTimeout(() => resolve(null), 4000)),
+    ]);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 module.exports = async (req, res) => {
@@ -23,7 +45,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const body = parseBody(req);
+  const body = await parseBody(req);
 
   const firstName = ((body && body.firstName) || "").trim();
   const lastName = ((body && body.lastName) || "").trim();
@@ -34,8 +56,21 @@ module.exports = async (req, res) => {
   const answers = body && body.answers;
   const consent = body && body.consent === true;
 
-  if (!firstName || !lastName || !isValidEmail(email) || !consent || !isValidAnswers(answers)) {
-    res.status(400).json({ error: "Données invalides." });
+  const validationErrors = [];
+  if (!body) validationErrors.push("corps de requête vide ou illisible");
+  if (!firstName) validationErrors.push("prénom manquant");
+  if (!lastName) validationErrors.push("nom manquant");
+  if (!isValidEmail(email)) validationErrors.push("email invalide");
+  if (!consent) validationErrors.push("consentement manquant");
+  if (!isValidAnswers(answers)) validationErrors.push("réponses invalides (attendu : 50 valeurs 1/2/3)");
+
+  if (validationErrors.length > 0) {
+    console.error("submit validation failed", {
+      contentType: req.headers["content-type"],
+      bodyType: typeof req.body,
+      errors: validationErrors,
+    });
+    res.status(400).json({ error: "Données invalides.", details: validationErrors });
     return;
   }
 
