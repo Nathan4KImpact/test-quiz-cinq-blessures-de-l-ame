@@ -12,54 +12,109 @@ un accompagnement psychologique et spirituel adéquat.
 Application web (adaptée mobile) qui fait passer le test des 5 blessures
 émotionnelles inspirées de l'approche de Lise Bourbeau — **Trahison**,
 **Rejet**, **Abandon**, **Humiliation**, **Injustice** — puis génère un
-rapport personnalisé : score par blessure, blessure dominante, explications
-et 3 actions concrètes pour chacune.
+rapport personnalisé, et permet un suivi dans le temps.
 
-- 50 affirmations (10 par blessure), notées de 1 (Non) à 3 (Oui)
-- Calcul automatique des scores et de la blessure dominante
-- Rapport détaillé (besoins clés, compréhension, signes, actions) pour les 5 blessures
-- 100 % client-side : aucune réponse n'est envoyée à un serveur : les réponses
-  restent uniquement dans le navigateur (`localStorage`), et permettent de
-  reprendre le test après une fermeture accidentelle
-- Bouton pour réserver une séance de coaching (ouvre un e-mail pré-rempli)
-  et bouton pour imprimer / enregistrer le résultat en PDF
-- Interface responsive (mobile-first), sans dépendance ni étape de build
+- 50 affirmations (10 par blessure), notées de 1 (Non) à 3 (Oui) ; la
+  blessure en cours n'est pas révélée pendant le test, pour ne pas influencer
+  les réponses
+- Recueille prénom, nom, email (obligatoire), téléphone/ville/code postal
+  (facultatifs), avec consentement explicite
+- Calcule la blessure dominante (et les ex æquo) et n'explique en détail que
+  celle-ci — plus la blessure suivante au classement quand il n'y a pas
+  d'ex æquo — pour une première lecture non écrasante
+- Chaque passation est enregistrée (base Supabase) et reliée aux passations
+  précédentes de la même personne via son email, pour suivre son évolution
+- **Interface admin** protégée par mot de passe : liste de tous les
+  participants, et pour chacun un graphique d'évolution des 5 scores dans le
+  temps (6 mois / 1 an / 3 ans / 5 ans / tout)
+- Rappel automatique par e-mail si une personne n'a pas refait le test depuis
+  6 mois (optionnel, via Resend)
+- Bouton pour réserver une séance de coaching (e-mail pré-rempli) et bouton
+  pour imprimer / enregistrer le résultat en PDF (verset complet inclus)
+- Interface responsive (mobile-first)
+
+## Architecture
+
+Site statique (HTML/CSS/JS vanilla, aucune dépendance npm, aucune étape de
+build) + quelques fonctions serverless Vercel (Node, dossier `api/`) pour
+tout ce qui touche à l'enregistrement des données et à l'admin. Les données
+sont stockées dans un projet **Supabase** (Postgres géré).
+
+```
+index.html              Écrans public : accueil (profil), quiz, résultats
+admin.html               Tableau de bord admin (login + suivi des participants)
+css/style.css            Styles de l'app publique
+css/admin.css            Styles du tableau de bord admin
+js/data.js               Contenu du test : 50 questions + fiches des 5 blessures
+js/app.js                Logique de l'app publique (état, score, soumission, résultats)
+js/admin.js              Logique du tableau de bord admin
+sql/schema.sql            Schéma Supabase à exécuter une fois (SQL Editor)
+api/submit.js             Enregistre une passation (participant + scores)
+api/admin/login.js        Authentification admin (mot de passe → cookie signé)
+api/admin/logout.js       Déconnexion admin
+api/admin/participants.js Liste de tous les participants + dernier résultat
+api/admin/participant.js  Détail d'un participant + historique de ses passations
+api/cron/reminders.js     Tâche planifiée : e-mail de rappel après 6 mois d'inactivité
+api/_lib/                 Petits utilitaires partagés (Supabase REST, scoring, auth)
+```
+
+Aucune réponse n'est jamais visible par un tiers autre que toi : la base
+Supabase est verrouillée (RLS activé, aucune policy publique), seules les
+fonctions serverless — via une clé secrète côté serveur — peuvent y accéder.
+
+## Mise en place (une seule fois)
+
+### 1. Base de données Supabase
+
+1. Créer un projet sur [supabase.com](https://supabase.com) (région Europe
+   recommandée pour des données sensibles).
+2. Dans le dashboard du projet : **SQL Editor → New query**, coller le
+   contenu de [`sql/schema.sql`](sql/schema.sql), puis **Run**.
+3. Dans **Project Settings → API**, relever :
+   - `Project URL` → deviendra `SUPABASE_URL`
+   - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
+     `SUPABASE_SERVICE_ROLE_KEY`
+
+### 2. Variables d'environnement Vercel
+
+Dans le projet Vercel : **Settings → Environment Variables**, ajouter :
+
+| Variable | Obligatoire | Description |
+|---|---|---|
+| `SUPABASE_URL` | oui | URL du projet Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | oui | Clé `service_role` Supabase (secrète) |
+| `ADMIN_PASSWORD` | oui | Mot de passe pour accéder à `/admin.html` |
+| `SESSION_SECRET` | oui | Chaîne aléatoire longue, sert à signer le cookie admin (ex. générée avec `openssl rand -hex 32`) |
+| `CRON_SECRET` | oui, si rappels activés | Chaîne aléatoire ; Vercel l'envoie automatiquement à la tâche planifiée pour l'authentifier |
+| `RESEND_API_KEY` | non | Active l'e-mail de rappel à 6 mois (compte gratuit sur [resend.com](https://resend.com)) |
+| `REMINDER_FROM_EMAIL` | non | Adresse d'expédition des rappels (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié) |
+| `APP_URL` | non | URL publique de l'app, utilisée dans le lien du mail de rappel |
+
+Aucune de ces valeurs n'a besoin d'être partagée en dehors du dashboard
+Vercel.
+
+### 3. Déploiement
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNathan4KImpact%2Ftest-quiz-cinq-blessures-de-l-ame%2Ftree%2Fclaude%2Fleaman-test-web-app-ahuy0e&project-name=test-5-blessures-de-lame&repository-name=test-5-blessures-de-lame)
+
+Ou manuellement :
+
+1. [vercel.com](https://vercel.com) → **Add New… → Project**, importer
+   `Nathan4KImpact/test-quiz-cinq-blessures-de-l-ame`.
+2. Renseigner les variables d'environnement ci-dessus.
+3. **Deploy** (aucun *build command* nécessaire).
+
+Le tableau de bord admin est accessible sur `<ton-domaine>/admin.html`.
 
 ## Lancer le projet en local
 
-Le site est statique (HTML/CSS/JS vanilla), il suffit de le servir :
+Le front est statique, il suffit de le servir :
 
 ```bash
 python3 -m http.server 8000
 # puis ouvrir http://localhost:8000
 ```
 
-Ou en ouvrant directement `index.html` dans un navigateur.
-
-## Déploiement
-
-Comme il s'agit d'un site 100 % statique, il peut être déployé tel quel sur
-GitHub Pages, Netlify, Vercel ou tout hébergeur de fichiers statiques — sans
-étape de build.
-
-### Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNathan4KImpact%2Ftest-quiz-cinq-blessures-de-l-ame%2Ftree%2Fclaude%2Fleaman-test-web-app-ahuy0e&project-name=test-5-blessures-de-lame&repository-name=test-5-blessures-de-lame)
-
-Ou manuellement, sans passer par le bouton :
-
-1. Se connecter sur [vercel.com](https://vercel.com) avec le compte GitHub qui a accès à ce dépôt.
-2. **Add New… → Project**, puis importer `Nathan4KImpact/test-quiz-cinq-blessures-de-l-ame`.
-3. Laisser les réglages par défaut (aucun *build command*, aucun *output directory* nécessaire — site statique) et cliquer **Deploy**.
-4. Vercel fournit une URL `*.vercel.app` immédiatement ; un nom de domaine personnalisé peut être ajouté ensuite dans **Project → Settings → Domains**.
-
-Un fichier `vercel.json` minimal est inclus (URLs propres, pas de slash final).
-
-## Structure
-
-```
-index.html        Structure des 3 écrans (accueil, quiz, résultats)
-css/style.css      Styles responsives (mobile-first)
-js/data.js         Contenu du test : 50 questions + fiches des 5 blessures
-js/app.js          Logique de l'application (état, score, rendu, persistance)
-```
+Pour tester les fonctions serverless (`api/`) en local, utiliser la
+[Vercel CLI](https://vercel.com/docs/cli) : `vercel dev` (nécessite les
+mêmes variables d'environnement dans un fichier `.env.local`).

@@ -1,15 +1,37 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "blessures-ame-quiz-v1";
+  const STORAGE_KEY = "blessures-ame-quiz-v2";
   const TOTAL = QUIZ.length; // 50
+  const SUBMIT_TIMEOUT_MS = 7000;
 
-  /** @type {{firstName: string, answers: (number|null)[], currentIndex: number}} */
-  let state = {
-    firstName: "",
-    answers: new Array(TOTAL).fill(null),
-    currentIndex: 0,
-  };
+  /**
+   * @typedef {Object} State
+   * @property {string} firstName
+   * @property {string} lastName
+   * @property {string} email
+   * @property {string} phone
+   * @property {string} city
+   * @property {string} postalCode
+   * @property {(number|null)[]} answers
+   * @property {number} currentIndex
+   * @property {number|null} attemptNumber
+   */
+  let state = emptyState();
+
+  function emptyState() {
+    return {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      city: "",
+      postalCode: "",
+      answers: new Array(TOTAL).fill(null),
+      currentIndex: 0,
+      attemptNumber: null,
+    };
+  }
 
   // ---------- Elements ----------
   const screens = {
@@ -20,6 +42,13 @@
 
   const startForm = document.getElementById("start-form");
   const firstNameInput = document.getElementById("first-name");
+  const lastNameInput = document.getElementById("last-name");
+  const emailInput = document.getElementById("email");
+  const phoneInput = document.getElementById("phone");
+  const cityInput = document.getElementById("city");
+  const postalCodeInput = document.getElementById("postal-code");
+  const consentInput = document.getElementById("consent");
+  const startSubmitBtn = startForm.querySelector("button[type=submit]");
   const resumeBanner = document.getElementById("resume-banner");
   const resumeProgress = document.getElementById("resume-progress");
   const resumeBtn = document.getElementById("resume-btn");
@@ -28,11 +57,11 @@
   const progressFill = document.getElementById("progress-fill");
   const progressTrack = document.querySelector(".progress-track");
   const progressLabel = document.getElementById("progress-label");
-  const woundPill = document.getElementById("wound-pill");
   const questionText = document.getElementById("question-text");
   const answerOptions = document.getElementById("answer-options");
   const prevBtn = document.getElementById("prev-btn");
 
+  const attemptMeta = document.getElementById("attempt-meta");
   const dominantName = document.getElementById("dominant-name");
   const dominantMask = document.getElementById("dominant-mask");
   const dominantScore = document.getElementById("dominant-score");
@@ -101,7 +130,7 @@
       resumeBanner.hidden = false;
       resumeBtn.onclick = () => {
         state = saved;
-        firstNameInput.value = state.firstName || "";
+        fillFormFromState();
         if (count === TOTAL) {
           renderResults();
           showScreen("results");
@@ -117,12 +146,25 @@
     }
   }
 
+  function fillFormFromState() {
+    firstNameInput.value = state.firstName || "";
+    lastNameInput.value = state.lastName || "";
+    emailInput.value = state.email || "";
+    phoneInput.value = state.phone || "";
+    cityInput.value = state.city || "";
+    postalCodeInput.value = state.postalCode || "";
+  }
+
   startForm.addEventListener("submit", (e) => {
     e.preventDefault();
     state = {
+      ...emptyState(),
       firstName: firstNameInput.value.trim(),
-      answers: new Array(TOTAL).fill(null),
-      currentIndex: 0,
+      lastName: lastNameInput.value.trim(),
+      email: emailInput.value.trim(),
+      phone: phoneInput.value.trim(),
+      city: cityInput.value.trim(),
+      postalCode: postalCodeInput.value.trim(),
     };
     saveState();
     startQuizFromCurrent();
@@ -137,10 +179,7 @@
   function renderQuestion(index) {
     state.currentIndex = index;
     const q = QUIZ[index];
-    const wound = WOUNDS.find((w) => w.id === q.woundId);
 
-    woundPill.textContent = wound.name;
-    woundPill.style.background = wound.color;
     progressLabel.textContent = `Question ${index + 1} / ${TOTAL}`;
 
     const pct = Math.round((index / TOTAL) * 100);
@@ -202,10 +241,48 @@
     }
   });
 
-  function finishQuiz() {
+  async function finishQuiz() {
     progressFill.style.width = "100%";
+    progressLabel.textContent = "Enregistrement de tes réponses…";
+    await submitAttempt();
     renderResults();
     showScreen("results");
+  }
+
+  // ---------- Envoi au serveur ----------
+  async function submitAttempt() {
+    const payload = {
+      firstName: state.firstName,
+      lastName: state.lastName,
+      email: state.email,
+      phone: state.phone,
+      city: state.city,
+      postalCode: state.postalCode,
+      answers: state.answers,
+      consent: true,
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      window.clearTimeout(timeout);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.attemptNumber === "number") {
+          state.attemptNumber = data.attemptNumber;
+        }
+      }
+    } catch (e) {
+      // Hors-ligne ou serveur indisponible : on affiche quand même les résultats
+      // calculés localement, sans numéro de passation.
+    }
+    saveState();
   }
 
   // ---------- Scoring ----------
@@ -227,22 +304,47 @@
     });
   }
 
+  // Détermine les blessures à détailler : la ou les blessures dominantes
+  // (ex æquo compris), et sinon la blessure suivante dans le classement.
+  function pickHighlighted(results) {
+    const topScore = results[0].score;
+    const dominant = results.filter((r) => r.score === topScore);
+    if (dominant.length > 1) return { dominant, shown: dominant };
+    const shown = results[1] ? [results[0], results[1]] : [results[0]];
+    return { dominant, shown };
+  }
+
   // ---------- Results screen ----------
   function renderResults() {
     const results = computeScores().sort((a, b) => b.score - a.score);
-    const top = results[0];
+    const { dominant, shown } = pickHighlighted(results);
 
     resultsTitle.textContent = state.firstName
       ? `Résultats de ${state.firstName}`
       : "Tes résultats";
 
-    dominantName.textContent = top.wound.name;
-    dominantMask.textContent = `Masque : ${top.wound.mask}`;
-    dominantScore.textContent = `Score : ${top.score} / 50 — ${top.level.label}`;
+    if (state.attemptNumber) {
+      attemptMeta.textContent = `Passation n°${state.attemptNumber} — ${formatDate(new Date())}`;
+      attemptMeta.hidden = false;
+    } else {
+      attemptMeta.hidden = true;
+    }
+
+    dominantName.textContent = dominant.map((d) => d.wound.name).join(" & ");
+    dominantMask.textContent =
+      "Masque : " + dominant.map((d) => d.wound.mask).join(" & ");
+    dominantScore.textContent =
+      dominant.length > 1
+        ? `Blessures ex æquo — ${dominant[0].score} / 50 — ${dominant[0].level.label}`
+        : `Score : ${dominant[0].score} / 50 — ${dominant[0].level.label}`;
 
     renderChart(results);
-    renderAccordion(results, top.wound.id);
-    setupBookingLink(top, state.firstName);
+    renderAccordion(shown, dominant.map((d) => d.wound.id));
+    setupBookingLink(dominant, state.firstName);
+  }
+
+  function formatDate(date) {
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   }
 
   function renderChart(results) {
@@ -279,13 +381,13 @@
     });
   }
 
-  function renderAccordion(results, dominantId) {
+  function renderAccordion(shown, dominantIds) {
     woundAccordion.innerHTML = "";
 
-    results.forEach((r) => {
+    shown.forEach((r) => {
       const item = document.createElement("div");
       item.className = "accordion-item";
-      const isDominant = r.wound.id === dominantId;
+      const isDominant = dominantIds.includes(r.wound.id);
       if (isDominant) {
         item.classList.add("open");
         item.dataset.dominant = "true";
@@ -327,14 +429,15 @@
     });
   }
 
-  function setupBookingLink(top, firstName) {
+  function setupBookingLink(dominant, firstName) {
+    const woundLabel = dominant.map((d) => `${d.wound.name} (masque ${d.wound.mask})`).join(" & ");
     const subject = "Demande de séance de coaching — Test des 5 blessures de l'âme";
     const greeting = firstName ? `Bonjour, je m'appelle ${firstName}.` : "Bonjour,";
     const body = [
       greeting,
       "",
       `J'ai réalisé le Test des 5 blessures de l'âme.`,
-      `Ma blessure dominante ressort comme : ${top.wound.name} (masque ${top.wound.mask}), avec un score de ${top.score}/50.`,
+      `Ma/mes blessure(s) dominante(s) ressortent comme : ${woundLabel}, avec un score de ${dominant[0].score}/50.`,
       "",
       "Je souhaiterais réserver une séance d'accompagnement psychologique et spirituel.",
       "",
@@ -351,12 +454,8 @@
 
   restartBtn.addEventListener("click", () => {
     clearState();
-    state = {
-      firstName: "",
-      answers: new Array(TOTAL).fill(null),
-      currentIndex: 0,
-    };
-    firstNameInput.value = "";
+    state = emptyState();
+    startForm.reset();
     resumeBanner.hidden = true;
     showScreen("welcome");
   });

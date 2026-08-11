@@ -1,0 +1,240 @@
+/* Styles propres au tableau de bord admin — s'appuie sur les tokens
+   définis dans style.css (couleurs, boutons, cartes). */
+
+#admin-app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px calc(48px + env(safe-area-inset-bottom));
+}
+
+#admin-app > .admin-screen {
+  width: 100%;
+  max-width: 960px;
+}
+
+.admin-screen {
+  display: none;
+}
+
+.admin-screen.active {
+  display: block;
+  animation: fade-in 0.35s ease both;
+}
+
+.login-card {
+  max-width: 460px;
+  margin: 60px auto 0;
+  text-align: center;
+}
+
+.login-card form {
+  text-align: left;
+  margin-top: 8px;
+}
+
+.form-error {
+  color: #b0223a;
+  background: #fdeaee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  margin-top: 10px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 20px;
+  flex-wrap: wrap;
+}
+
+.admin-header h1 {
+  text-align: left;
+  margin: 0 0 4px;
+  font-size: 1.4rem;
+}
+
+.admin-subtitle {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.back-btn {
+  margin-bottom: 16px;
+}
+
+.admin-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  text-align: center;
+}
+
+.summary-stat .num {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--rose-dark);
+}
+
+.summary-stat .label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.table-toolbar {
+  margin-bottom: 14px;
+}
+
+.table-toolbar input[type="search"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  background: #fffafc;
+  color: var(--ink);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.admin-table th {
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--border);
+}
+
+.admin-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: var(--rose-light);
+}
+
+.wound-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.wound-tag .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 24px 0 4px;
+}
+
+.participant-name {
+  font-size: 1.3rem;
+  margin: 4px 0 10px;
+}
+
+.participant-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+
+.participant-meta strong {
+  color: var(--ink);
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.range-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.range-toolbar h3 {
+  margin: 0;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.range-btn {
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--rose-dark);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.range-btn.active {
+  background: var(--rose);
+  border-color: var(--rose);
+  color: #fff;
+}
+
+.evolution-chart {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.evolution-chart svg {
+  width: 100%;
+  height: auto;
+  min-width: 480px;
+}
+
+.evolution-empty {
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 40px 0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .admin-header {
+    flex-direction: column;
+  }
+}
