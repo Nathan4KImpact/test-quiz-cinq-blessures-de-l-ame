@@ -176,7 +176,15 @@
   }
 
   // ---------- Quiz screen ----------
+  let isTransitioning = false;
+  let pendingTransitionTimer = null;
+
   function renderQuestion(index) {
+    isTransitioning = false;
+    if (pendingTransitionTimer) {
+      window.clearTimeout(pendingTransitionTimer);
+      pendingTransitionTimer = null;
+    }
     state.currentIndex = index;
     const q = QUIZ[index];
 
@@ -209,6 +217,13 @@
   }
 
   function selectAnswer(value) {
+    // Ignore les clics sur les boutons de la question précédente pendant la
+    // transition : sans ce garde-fou, un double-clic rapide peut faire
+    // avancer deux fois de suite et sauter une question sans jamais
+    // l'enregistrer (elle reste "null").
+    if (isTransitioning) return;
+    isTransitioning = true;
+
     state.answers[state.currentIndex] = value;
     saveState();
 
@@ -216,10 +231,13 @@
       btn.classList.toggle("selected", Number(btn.dataset.value) === value);
     });
 
+    const targetIndex = state.currentIndex;
+
     // petite pause visuelle avant de passer à la question suivante
-    window.setTimeout(() => {
-      if (state.currentIndex < TOTAL - 1) {
-        renderQuestion(state.currentIndex + 1);
+    pendingTransitionTimer = window.setTimeout(() => {
+      pendingTransitionTimer = null;
+      if (targetIndex < TOTAL - 1) {
+        renderQuestion(targetIndex + 1);
       } else {
         finishQuiz();
       }
