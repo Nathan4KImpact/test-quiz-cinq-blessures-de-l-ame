@@ -428,24 +428,25 @@
       return padT + innerH - (score / 50) * innerH;
     }
 
-    // Bandes de fond + libellé de sévérité rendu verticalement dans la
-    // gouttière gauche, centré sur sa zone. Les valeurs numériques sont
-    // affichées séparément sur l'axe Y (grid lines), donc le libellé
-    // ne contient que la catégorie. textLength garantit que le texte
-    // s'adapte à la hauteur de la bande, quelle qu'elle soit.
-    const LABEL_X = padL - 46;
+    // Bandes de fond + libellé de sévérité horizontal dans la gouttière
+    // gauche, centré verticalement sur la bande et aligné à droite juste
+    // avant les repères de l'axe Y (les nombres 0/20/29/40/50 restent
+    // visibles). Un léger décalage vertical est appliqué quand la bande
+    // est trop petite pour éviter le chevauchement avec un repère d'axe.
+    const LABEL_X = padL - 22;
+    const AXIS_MARKS = [0, 20, 29, 40, 50];
     const bands = SEVERITY_BANDS.map((b) => {
       const yTop = y(b.max);
       const yBot = y(b.min);
       const yMid = (yTop + yBot) / 2;
       const bandHeight = yBot - yTop;
       const rect = `<rect x="${padL}" y="${yTop}" width="${innerW}" height="${bandHeight}" fill="${b.color}" />`;
-      // Espace disponible pour le libellé rotatif (hauteur de bande - marge).
-      const available = Math.max(0, bandHeight - 8);
-      const label =
-        available >= 26
-          ? `<text x="${LABEL_X}" y="${yMid}" font-size="10" font-weight="700" fill="${b.textColor}" text-anchor="middle" transform="rotate(-90 ${LABEL_X} ${yMid})" textLength="${available}" lengthAdjust="spacingAndGlyphs">${b.label}</text>`
-          : "";
+      // Décale le libellé si le milieu de la bande tombe sur un repère d'axe.
+      let labelY = yMid + 3;
+      if (AXIS_MARKS.some((score) => Math.abs(y(score) - yMid) < 8)) {
+        labelY = yMid - 6;
+      }
+      const label = `<text x="${LABEL_X}" y="${labelY}" font-size="10" font-weight="700" fill="${b.textColor}" text-anchor="end">${b.label}</text>`;
       return rect + label;
     }).join("");
 
