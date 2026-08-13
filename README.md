@@ -20,8 +20,8 @@ rapport personnalisé, et permet un suivi dans le temps.
 - **Homme (Kanegnon) ou Femme (Leaman)** : palette adaptée (rose ↔ bleu) et
   toutes les formulations « accepté(e) » accordées au genre choisi
 - Recueille prénom, nom, téléphone (obligatoire — sert d'identifiant pour
-  relier les tests successifs), email/ville/code postal (facultatifs), avec
-  consentement explicite
+  relier les tests successifs), email (obligatoire, pour le contact et les
+  rappels), ville et code postal (facultatifs), avec consentement explicite
 - Calcule la blessure dominante (et les ex æquo) et n'explique en détail que
   celle-ci — plus la blessure « modérée » qui suit au classement quand il n'y
   a pas d'ex æquo — pour une première lecture non écrasante
