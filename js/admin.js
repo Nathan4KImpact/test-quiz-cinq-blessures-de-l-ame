@@ -344,7 +344,7 @@
       })
       .join("");
 
-    attemptReportTitle.textContent = `Rapport du test n°${attempt.attempt_number} — ${formatDate(attempt.taken_at)}`;
+    attemptReportTitle.textContent = `Rapport du test passé ${attempt.attempt_number} — ${formatDate(attempt.taken_at)}`;
     attemptReport.innerHTML = `
       <div class="report-block">
         <p class="eyebrow">Blessure${dominantEntries.length > 1 ? "s" : ""} dominante${dominantEntries.length > 1 ? "s" : ""}</p>

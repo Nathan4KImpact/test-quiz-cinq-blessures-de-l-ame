@@ -5,11 +5,9 @@ const { computeScores, isValidAnswers, describeAnswersProblem } = require("./_li
 // (input type="email"), qui n'exige pas de point dans le domaine. Un
 // contrôle serveur plus strict que le contrôle client rejetterait à tort
 // des emails que l'utilisateur a pourtant pu saisir et valider dans le
-// formulaire. L'email est désormais facultatif : une chaîne vide est
-// toujours valide.
+// formulaire.
 function isValidEmail(email) {
-  if (!email) return true;
-  return /^[^\s@]+@[^\s@]+$/.test(email);
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+$/.test(email);
 }
 
 // Le téléphone est l'identifiant stable du participant : on normalise en
@@ -113,7 +111,7 @@ module.exports = async (req, res) => {
           gender,
           first_name: firstName,
           last_name: lastName,
-          email: email || null,
+          email,
           city: city || null,
           postal_code: postalCode || null,
           last_test_at: now,
@@ -127,7 +125,7 @@ module.exports = async (req, res) => {
         body: JSON.stringify({
           phone,
           gender,
-          email: email || null,
+          email,
           first_name: firstName,
           last_name: lastName,
           city: city || null,

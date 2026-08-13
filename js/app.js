@@ -377,7 +377,7 @@
       : "Tes résultats";
 
     if (state.attemptNumber) {
-      attemptMeta.textContent = `Test n°${state.attemptNumber} — ${formatDate(new Date())}`;
+      attemptMeta.textContent = `Test passé : ${state.attemptNumber} — ${formatDate(new Date())}`;
       attemptMeta.hidden = false;
     } else {
       attemptMeta.hidden = true;

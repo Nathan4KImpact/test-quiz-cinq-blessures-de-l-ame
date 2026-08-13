@@ -31,10 +31,8 @@ module.exports = async (req, res) => {
 
   try {
     const cutoffIso = new Date(Date.now() - SIX_MONTHS_MS).toISOString();
-    // L'email étant désormais facultatif, seuls les participants qui en ont
-    // renseigné un peuvent recevoir un rappel.
     const due = await supabaseRequest(
-      `/participants?last_test_at=lte.${encodeURIComponent(cutoffIso)}&reminder_sent_at=is.null&email=not.is.null&select=id,email,first_name,last_test_at`
+      `/participants?last_test_at=lte.${encodeURIComponent(cutoffIso)}&reminder_sent_at=is.null&select=id,email,first_name,last_test_at`
     );
 
     let sent = 0;
