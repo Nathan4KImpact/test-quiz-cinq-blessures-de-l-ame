@@ -5,9 +5,22 @@ const { computeScores, isValidAnswers, describeAnswersProblem } = require("./_li
 // (input type="email"), qui n'exige pas de point dans le domaine. Un
 // contrôle serveur plus strict que le contrôle client rejetterait à tort
 // des emails que l'utilisateur a pourtant pu saisir et valider dans le
-// formulaire.
+// formulaire. L'email est désormais facultatif : une chaîne vide est
+// toujours valide.
 function isValidEmail(email) {
-  return typeof email === "string" && /^[^\s@]+@[^\s@]+$/.test(email);
+  if (!email) return true;
+  return /^[^\s@]+@[^\s@]+$/.test(email);
+}
+
+// Le téléphone est l'identifiant stable du participant : on normalise en
+// retirant espaces/points/tirets/parenthèses pour que "06 12 34 56 78" et
+// "0612345678" désignent la même personne.
+function normalizePhone(phone) {
+  return (phone || "").replace(/[\s.\-()]/g, "");
+}
+
+function isValidGender(gender) {
+  return gender === "homme" || gender === "femme";
 }
 
 function readRawBody(req) {
@@ -52,10 +65,11 @@ module.exports = async (req, res) => {
 
   const body = await parseBody(req);
 
+  const gender = (body && body.gender) || "";
   const firstName = ((body && body.firstName) || "").trim();
   const lastName = ((body && body.lastName) || "").trim();
   const email = ((body && body.email) || "").trim().toLowerCase();
-  const phone = ((body && body.phone) || "").trim();
+  const phone = normalizePhone((body && body.phone) || "");
   const city = ((body && body.city) || "").trim();
   const postalCode = ((body && body.postalCode) || "").trim();
   const answers = body && body.answers;
@@ -63,8 +77,10 @@ module.exports = async (req, res) => {
 
   const validationErrors = [];
   if (!body) validationErrors.push("corps de requête vide ou illisible");
+  if (!isValidGender(gender)) validationErrors.push("genre manquant ou invalide");
   if (!firstName) validationErrors.push("prénom manquant");
   if (!lastName) validationErrors.push("nom manquant");
+  if (!phone) validationErrors.push("téléphone manquant");
   if (!isValidEmail(email)) validationErrors.push("email invalide");
   if (!consent) validationErrors.push("consentement manquant");
   if (!isValidAnswers(answers)) {
@@ -85,7 +101,7 @@ module.exports = async (req, res) => {
     const now = new Date().toISOString();
 
     const existing = await supabaseRequest(
-      `/participants?email=eq.${encodeURIComponent(email)}&select=id`
+      `/participants?phone=eq.${encodeURIComponent(phone)}&select=id`
     );
 
     let participantId;
@@ -94,9 +110,10 @@ module.exports = async (req, res) => {
       await supabaseRequest(`/participants?id=eq.${participantId}`, {
         method: "PATCH",
         body: JSON.stringify({
+          gender,
           first_name: firstName,
           last_name: lastName,
-          phone: phone || null,
+          email: email || null,
           city: city || null,
           postal_code: postalCode || null,
           last_test_at: now,
@@ -108,10 +125,11 @@ module.exports = async (req, res) => {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify({
-          email,
+          phone,
+          gender,
+          email: email || null,
           first_name: firstName,
           last_name: lastName,
-          phone: phone || null,
           city: city || null,
           postal_code: postalCode || null,
           last_test_at: now,

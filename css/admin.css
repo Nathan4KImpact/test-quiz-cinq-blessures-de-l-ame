@@ -89,10 +89,13 @@
 
 .table-toolbar {
   margin-bottom: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .table-toolbar input[type="search"] {
-  width: 100%;
+  flex: 1 1 240px;
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 11px 14px;
@@ -101,8 +104,44 @@
   color: var(--ink);
 }
 
+.table-toolbar select {
+  flex: 0 1 220px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 0.9rem;
+  background: #fffafc;
+  color: var(--ink);
+}
+
 .table-scroll {
   overflow-x: auto;
+}
+
+.wound-tag-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wound-tag.secondary {
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+}
+
+.section-note-admin {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  margin: -8px 0 14px;
+}
+
+.attempt-row {
+  cursor: pointer;
+}
+
+.attempt-row.selected {
+  background: var(--rose-light);
 }
 
 .admin-table {
@@ -218,6 +257,14 @@
 .evolution-chart {
   width: 100%;
   overflow-x: auto;
+}
+
+.band-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 9px;
+  border-radius: 2px;
+  vertical-align: middle;
 }
 
 .evolution-chart svg {

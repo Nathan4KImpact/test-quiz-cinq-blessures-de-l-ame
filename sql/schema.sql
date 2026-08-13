@@ -1,20 +1,25 @@
 -- Test des 5 blessures de l'âme — schéma Supabase
 --
--- À exécuter une seule fois : dans le dashboard Supabase, ouvrir
+-- Pour une INSTALLATION NEUVE : dans le dashboard Supabase, ouvrir
 -- "SQL Editor" → "New query", coller tout ce fichier, puis "Run".
 -- Peut être ré-exécuté sans risque (create if not exists partout).
+--
+-- Si la base existe déjà (V2), utiliser plutôt
+-- sql/migrations/002_phone_identity_and_gender.sql.
 
 create extension if not exists pgcrypto;
 
 -- Une ligne par personne ayant passé le test au moins une fois.
--- L'email sert d'identifiant stable pour relier les passations successives
--- de la même personne dans le temps (suivi d'évolution).
+-- Le téléphone (obligatoire) sert d'identifiant stable pour relier les
+-- passations successives de la même personne dans le temps (suivi
+-- d'évolution) ; l'email est facultatif.
 create table if not exists participants (
   id uuid primary key default gen_random_uuid(),
-  email text not null unique,
+  phone text not null unique,
+  email text,
+  gender text check (gender is null or gender in ('homme', 'femme')),
   first_name text not null,
   last_name text not null,
-  phone text,
   city text,
   postal_code text,
   created_at timestamptz not null default now(),

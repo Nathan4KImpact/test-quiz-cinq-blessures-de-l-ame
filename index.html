@@ -20,8 +20,7 @@
       <h1>Test des 5 blessures de l'âme</h1>
 
       <blockquote class="verse">
-        « Bien-aimée, je souhaite que tu prospères à tous égards et sois en
-        bonne santé, comme prospère l'état de ton âme. »
+        « <span id="verse-text-welcome">Bien-aimé(e), je souhaite que tu prospères à tous égards et sois en bonne santé, comme prospère l'état de ton âme.</span> »
         <cite>3 Jean 1:2</cite>
       </blockquote>
 
@@ -41,17 +40,31 @@
       </ul>
 
       <form id="start-form">
+        <label>Tu es…</label>
+        <div class="gender-picker" role="radiogroup" aria-label="Genre">
+          <label class="gender-option">
+            <input type="radio" name="gender" value="homme" required />
+            <span class="gender-label">Homme</span>
+            <span class="gender-sublabel">Kanegnon</span>
+          </label>
+          <label class="gender-option">
+            <input type="radio" name="gender" value="femme" required />
+            <span class="gender-label">Femme</span>
+            <span class="gender-sublabel">Leaman</span>
+          </label>
+        </div>
+
         <label for="first-name">Prénom</label>
         <input type="text" id="first-name" name="first-name" autocomplete="given-name" placeholder="Ex. Marie" maxlength="60" required />
 
         <label for="last-name">Nom</label>
         <input type="text" id="last-name" name="last-name" autocomplete="family-name" placeholder="Ex. Dupont" maxlength="60" required />
 
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
+        <label for="phone">Téléphone</label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="06 12 34 56 78" maxlength="30" required />
 
-        <label for="phone">Téléphone <span class="optional">(facultatif)</span></label>
-        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="06 12 34 56 78" maxlength="30" />
+        <label for="email">Email <span class="optional">(facultatif)</span></label>
+        <input type="email" id="email" name="email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" />
 
         <div class="form-row">
           <div class="form-col">
@@ -117,8 +130,7 @@
         <h1 id="results-title">Tes résultats</h1>
         <p id="attempt-meta" class="attempt-meta" hidden></p>
         <blockquote class="verse verse-small">
-          « Bien-aimée, je souhaite que tu prospères à tous égards et sois en
-          bonne santé, comme prospère l'état de ton âme. »
+          « <span id="verse-text-results">Bien-aimé(e), je souhaite que tu prospères à tous égards et sois en bonne santé, comme prospère l'état de ton âme.</span> »
           <cite>3 Jean 1:2</cite>
         </blockquote>
       </div>
@@ -134,14 +146,14 @@
         <h3>Vue d'ensemble des 5 blessures</h3>
         <div id="score-chart" class="score-chart"><!-- generated in JS --></div>
         <div class="legend">
-          <span><i class="dot dot-high"></i> Très dominante (40-50)</span>
+          <span><i class="dot dot-high"></i> Dominante (40-50)</span>
           <span><i class="dot dot-moderate"></i> Modérée (29-39)</span>
           <span><i class="dot dot-low"></i> Peu présente (20-28)</span>
           <span><i class="dot dot-minimal"></i> Peu marquée (&lt;20)</span>
         </div>
       </div>
 
-      <p class="section-note">Pour cette première lecture, seule(s) ta ou tes blessure(s) la/les plus marquée(s) sont détaillées ci-dessous.</p>
+      <p class="section-note">Pour cette première lecture, seules la blessure dominante et la blessure modérée sont détaillées ci-dessous afin de cibler les mécanismes qui influencent le plus ton quotidien, tes réactions et tes relations actuelles.</p>
       <div id="wound-accordion" class="accordion"><!-- generated in JS --></div>
 
       <div class="card cta-card">

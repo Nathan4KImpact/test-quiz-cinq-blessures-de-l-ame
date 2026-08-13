@@ -11,6 +11,7 @@
   const loginError = document.getElementById("login-error");
   const logoutBtn = document.getElementById("logout-btn");
   const searchInput = document.getElementById("search-input");
+  const woundFilter = document.getElementById("wound-filter");
   const participantsTbody = document.getElementById("participants-tbody");
   const emptyState = document.getElementById("empty-state");
   const adminSummary = document.getElementById("admin-summary");
@@ -21,10 +22,17 @@
   const evolutionChart = document.getElementById("evolution-chart");
   const evolutionLegend = document.getElementById("evolution-legend");
   const attemptsTbody = document.getElementById("attempts-tbody");
+  const attemptReportCard = document.getElementById("attempt-report-card");
+  const attemptReportTitle = document.getElementById("attempt-report-title");
+  const attemptReport = document.getElementById("attempt-report");
 
   let allParticipants = [];
   let currentDetail = null; // { participant, attempts }
   let currentRange = "all";
+
+  woundFilter.innerHTML =
+    `<option value="">Toutes les blessures dominantes</option>` +
+    WOUNDS.map((w) => `<option value="${w.id}">${w.name}</option>`).join("");
 
   function showScreen(name) {
     Object.entries(screens).forEach(([key, el]) => {
@@ -48,7 +56,33 @@
       .map((id) => woundById(id))
       .filter(Boolean)
       .map((w) => w.name)
-      .join(" & ");
+      .join(" - ");
+  }
+
+  const SCORE_FIELDS = {
+    trahison: "score_trahison",
+    rejet: "score_rejet",
+    abandon: "score_abandon",
+    humiliation: "score_humiliation",
+    injustice: "score_injustice",
+  };
+
+  // Classe les 5 blessures d'une passation par score décroissant.
+  function rankWounds(attempt) {
+    return WOUNDS.map((w) => ({ wound: w, score: attempt[SCORE_FIELDS[w.id]] })).sort(
+      (a, b) => b.score - a.score
+    );
+  }
+
+  // La ou les blessures "modérées" : celles qui suivent immédiatement la
+  // dominante dans le classement (même logique que sur la page résultats).
+  function moderateWounds(attempt) {
+    const ranked = rankWounds(attempt);
+    const dominantIds = attempt.dominant_wounds || [];
+    const rest = ranked.filter((r) => !dominantIds.includes(r.wound.id));
+    if (rest.length === 0) return [];
+    const nextScore = rest[0].score;
+    return rest.filter((r) => r.score === nextScore).map((r) => r.wound.id);
   }
 
   // ---------- Auth ----------
@@ -96,7 +130,7 @@
     const data = await res.json();
     allParticipants = data.participants || [];
     renderSummary(allParticipants);
-    renderParticipants(allParticipants);
+    applyFilters();
     showScreen("dashboard");
   }
 
@@ -109,8 +143,8 @@
     ).length;
 
     adminSummary.innerHTML = `
-      <div class="summary-stat"><span class="num">${total}</span><span class="label">Participant(e)s</span></div>
-      <div class="summary-stat"><span class="num">${totalAttempts}</span><span class="label">Passations au total</span></div>
+      <div class="summary-stat"><span class="num">${total}</span><span class="label">Participant·es</span></div>
+      <div class="summary-stat"><span class="num">${totalAttempts}</span><span class="label">Tests passés au total</span></div>
       <div class="summary-stat"><span class="num">${activeLast30}</span><span class="label">Test refait ces 30 derniers jours</span></div>
     `;
   }
@@ -122,37 +156,55 @@
     list.forEach((p) => {
       const tr = document.createElement("tr");
       const latest = p.latestAttempt;
-      const dominant = latest ? dominantLabel(latest.dominant_wounds) : "—";
-      const dominantColor = latest && latest.dominant_wounds && latest.dominant_wounds[0]
-        ? (woundById(latest.dominant_wounds[0]) || {}).color
-        : "#ccc";
+      const dominantIds = latest ? latest.dominant_wounds || [] : [];
+      const dominantColor = dominantIds[0] ? (woundById(dominantIds[0]) || {}).color : "#ccc";
+      const dominantText = dominantLabel(dominantIds);
+      const moderateIds = latest ? moderateWounds(latest) : [];
+      const moderateColor = moderateIds[0] ? (woundById(moderateIds[0]) || {}).color : "#ccc";
+      const moderateBlock = moderateIds.length
+        ? `<span class="wound-tag secondary"><i class="dot" style="background:${moderateColor}"></i>${escapeHtml(dominantLabel(moderateIds))} (modérée)</span>`
+        : "";
 
       tr.innerHTML = `
         <td>${escapeHtml(p.last_name)} ${escapeHtml(p.first_name)}</td>
-        <td>${escapeHtml(p.email)}</td>
+        <td>${escapeHtml(p.email || "—")}</td>
         <td>${escapeHtml(p.city || "—")}</td>
         <td>${formatDate(p.last_test_at)}</td>
         <td>${p.attemptsCount}</td>
-        <td><span class="wound-tag"><i class="dot" style="background:${dominantColor}"></i>${escapeHtml(dominant)}</span></td>
+        <td>
+          <div class="wound-tag-group">
+            <span class="wound-tag"><i class="dot" style="background:${dominantColor}"></i>${escapeHtml(dominantText)}</span>
+            ${moderateBlock}
+          </div>
+        </td>
       `;
       tr.addEventListener("click", () => openDetail(p.id));
       participantsTbody.appendChild(tr);
     });
   }
 
-  searchInput.addEventListener("input", () => {
+  function applyFilters() {
     const q = searchInput.value.trim().toLowerCase();
-    if (!q) {
-      renderParticipants(allParticipants);
-      return;
+    const woundId = woundFilter.value;
+    let filtered = allParticipants;
+    if (q) {
+      filtered = filtered.filter((p) =>
+        [p.first_name, p.last_name, p.email, p.phone, p.city]
+          .filter(Boolean)
+          .some((field) => field.toLowerCase().includes(q))
+      );
     }
-    const filtered = allParticipants.filter((p) =>
-      [p.first_name, p.last_name, p.email, p.city]
-        .filter(Boolean)
-        .some((field) => field.toLowerCase().includes(q))
-    );
+    if (woundId) {
+      filtered = filtered.filter((p) => {
+        const latest = p.latestAttempt;
+        return latest && (latest.dominant_wounds || []).includes(woundId);
+      });
+    }
     renderParticipants(filtered);
-  });
+  }
+
+  searchInput.addEventListener("input", applyFilters);
+  woundFilter.addEventListener("change", applyFilters);
 
   function escapeHtml(str) {
     return String(str || "").replace(/[&<>"']/g, (c) => ({
@@ -175,6 +227,7 @@
     const data = await res.json();
     currentDetail = data;
     currentRange = "all";
+    attemptReportCard.hidden = true;
     renderParticipantInfo(data.participant, data.attempts);
     renderAttemptsTable(data.attempts);
     setActiveRangeButton("all");
@@ -185,15 +238,17 @@
   function renderParticipantInfo(p, attempts) {
     const last = attempts[attempts.length - 1];
     const dominant = last ? dominantLabel(last.dominant_wounds) : "—";
+    const genderLabel = p.gender === "homme" ? "Homme (Kanegnon)" : p.gender === "femme" ? "Femme (Leaman)" : "—";
     participantInfo.innerHTML = `
       <h2 class="participant-name">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</h2>
       <div class="participant-meta">
-        <div><strong>Email</strong>${escapeHtml(p.email)}</div>
+        <div><strong>Genre</strong>${escapeHtml(genderLabel)}</div>
         <div><strong>Téléphone</strong>${escapeHtml(p.phone || "—")}</div>
+        <div><strong>Email</strong>${escapeHtml(p.email || "—")}</div>
         <div><strong>Ville</strong>${escapeHtml(p.city || "—")}${p.postal_code ? " (" + escapeHtml(p.postal_code) + ")" : ""}</div>
-        <div><strong>Première passation</strong>${formatDate(p.created_at)}</div>
-        <div><strong>Dernière passation</strong>${formatDate(p.last_test_at)}</div>
-        <div><strong>Nombre de passations</strong>${attempts.length}</div>
+        <div><strong>Premier test</strong>${formatDate(p.created_at)}</div>
+        <div><strong>Dernier test</strong>${formatDate(p.last_test_at)}</div>
+        <div><strong>Nombre de tests passés</strong>${attempts.length}</div>
         <div><strong>Blessure dominante actuelle</strong>${escapeHtml(dominant)}</div>
       </div>
     `;
@@ -203,6 +258,8 @@
     attemptsTbody.innerHTML = "";
     [...attempts].reverse().forEach((a) => {
       const tr = document.createElement("tr");
+      tr.className = "attempt-row";
+      tr.dataset.attemptNumber = String(a.attempt_number);
       tr.innerHTML = `
         <td>${a.attempt_number}</td>
         <td>${formatDate(a.taken_at)}</td>
@@ -213,8 +270,96 @@
         <td>${a.score_injustice}</td>
         <td>${escapeHtml(dominantLabel(a.dominant_wounds))}</td>
       `;
+      tr.addEventListener("click", () => {
+        [...attemptsTbody.children].forEach((row) => row.classList.remove("selected"));
+        tr.classList.add("selected");
+        renderAttemptReport(a, currentDetail && currentDetail.participant);
+      });
       attemptsTbody.appendChild(tr);
     });
+  }
+
+  function levelFromScore(score) {
+    if (score >= 40) return { label: "Blessure dominante", tier: "high" };
+    if (score >= 29) return { label: "Blessure modérée", tier: "moderate" };
+    if (score >= 20) return { label: "Blessure peu présente", tier: "low" };
+    return { label: "Blessure peu marquée", tier: "minimal" };
+  }
+
+  // Rebâtit le rapport complet d'une passation, tel qu'il a été présenté à
+  // l'utilisateur, à partir des scores stockés + du contenu WOUNDS.
+  function renderAttemptReport(attempt, participant) {
+    const ranked = rankWounds(attempt).map((r) => ({
+      ...r,
+      level: levelFromScore(r.score),
+    }));
+    const dominantIds = attempt.dominant_wounds || [];
+    const dominantEntries = ranked.filter((r) => dominantIds.includes(r.wound.id));
+    const moderateIds = moderateWounds(attempt);
+    const shownIds = new Set([...dominantIds, ...moderateIds]);
+    const shown = ranked.filter((r) => shownIds.has(r.wound.id));
+
+    const gender = participant && participant.gender;
+    const dominantName = dominantLabel(dominantIds);
+    const dominantMasks = dominantEntries.map((r) => r.wound.mask).join(" - ");
+    const topScore = dominantEntries[0] ? dominantEntries[0].score : 0;
+    const topLevel = dominantEntries[0] ? dominantEntries[0].level.label : "—";
+
+    const chartRows = ranked
+      .map(
+        (r) => `
+          <div class="chart-row">
+            <span class="name">${escapeHtml(r.wound.name)}</span>
+            <div class="chart-track"><div class="chart-fill" style="background:${r.wound.color}; width:${Math.min(100, (r.score / 50) * 100)}%"></div></div>
+            <span class="value">${r.score}</span>
+          </div>`
+      )
+      .join("");
+
+    const accordionItems = shown
+      .map((r) => {
+        const isDominant = dominantIds.includes(r.wound.id);
+        return `
+          <div class="accordion-item open" ${isDominant ? 'data-dominant="true"' : ""}>
+            <div class="accordion-toggle" style="cursor:default">
+              <span class="toggle-left">
+                <span class="wound-swatch" style="background:${r.wound.color}"></span>
+                <span>
+                  <strong>${escapeHtml(r.wound.name)}${isDominant ? " · dominante" : " · modérée"}</strong>
+                  <span class="toggle-meta">Masque ${escapeHtml(r.wound.mask)} — ${r.score}/50 (${escapeHtml(r.level.label)})</span>
+                </span>
+              </span>
+            </div>
+            <div class="accordion-body" style="max-height:none; padding:0 20px 20px">
+              <h4>Besoins clés</h4>
+              <p>${genderize(r.wound.needs, gender)}</p>
+              <h4>Comprendre</h4>
+              <p>${genderize(r.wound.understand, gender)}</p>
+              <h4>Cela peut se traduire par</h4>
+              <ul>${r.wound.signs.map((s) => `<li>${genderize(s, gender)}</li>`).join("")}</ul>
+              <h4>3 actions pour te repositionner (dès cette semaine)</h4>
+              <ol>${r.wound.actions.map((a) => `<li>${genderize(a, gender)}</li>`).join("")}</ol>
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    attemptReportTitle.textContent = `Rapport du test n°${attempt.attempt_number} — ${formatDate(attempt.taken_at)}`;
+    attemptReport.innerHTML = `
+      <div class="report-block">
+        <p class="eyebrow">Blessure${dominantEntries.length > 1 ? "s" : ""} dominante${dominantEntries.length > 1 ? "s" : ""}</p>
+        <h2>${escapeHtml(dominantName)}</h2>
+        <p class="mask-line">Masque : ${escapeHtml(dominantMasks)}</p>
+        <p class="score-line">Score : ${topScore} / 50 — ${escapeHtml(topLevel)}</p>
+      </div>
+      <div class="report-chart">
+        <h4>Vue d'ensemble des 5 blessures</h4>
+        <div class="score-chart">${chartRows}</div>
+      </div>
+      <div class="accordion">${accordionItems}</div>
+    `;
+    attemptReportCard.hidden = false;
+    attemptReportCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   rangeButtons.addEventListener("click", (e) => {
@@ -238,19 +383,26 @@
     return attempts.filter((a) => new Date(a.taken_at).getTime() >= cutoff);
   }
 
-  const SCORE_FIELDS = {
-    trahison: "score_trahison",
-    rejet: "score_rejet",
-    abandon: "score_abandon",
-    humiliation: "score_humiliation",
-    injustice: "score_injustice",
-  };
+  // Zones colorées de fond : dominante (40-50), modérée (29-39), peu
+  // présente (20-28), peu marquée (<20). Le lecteur peut ainsi lire à
+  // quelle catégorie appartient chaque score sans se référer à la légende.
+  const SEVERITY_BANDS = [
+    { min: 40, max: 50, color: "rgba(194, 71, 139, 0.10)", label: "Dominante" },
+    { min: 29, max: 40, color: "rgba(217, 140, 63, 0.10)", label: "Modérée" },
+    { min: 20, max: 29, color: "rgba(124, 159, 191, 0.10)", label: "Peu présente" },
+    { min: 0, max: 20, color: "rgba(154, 168, 154, 0.10)", label: "Peu marquée" },
+  ];
 
   function renderEvolutionChart(attempts, range) {
     const filtered = filterByRange(attempts, range);
-    evolutionLegend.innerHTML = WOUNDS.map(
-      (w) => `<span><i class="dot" style="background:${w.color}"></i> ${w.name}</span>`
-    ).join("");
+    evolutionLegend.innerHTML =
+      WOUNDS.map(
+        (w) => `<span><i class="dot" style="background:${w.color}"></i> ${w.name}</span>`
+      ).join("") +
+      SEVERITY_BANDS.map(
+        (b) =>
+          `<span><i class="band-swatch" style="background:${b.color.replace("0.10", "0.5")}"></i> ${b.label} (${b.min}${b.max === 50 ? "-50" : "-" + (b.max - 1)})</span>`
+      ).join("");
 
     if (filtered.length === 0) {
       evolutionChart.innerHTML = `<p class="evolution-empty">Aucune passation dans cette période.</p>`;
@@ -279,10 +431,16 @@
       return padT + innerH - (score / 50) * innerH;
     }
 
-    const gridLines = [0, 10, 20, 29, 40, 50]
+    const bands = SEVERITY_BANDS.map((b) => {
+      const yTop = y(b.max);
+      const yBot = y(b.min);
+      return `<rect x="${padL}" y="${yTop}" width="${innerW}" height="${yBot - yTop}" fill="${b.color}" />`;
+    }).join("");
+
+    const gridLines = [0, 20, 29, 40, 50]
       .map(
         (score) =>
-          `<line x1="${padL}" y1="${y(score)}" x2="${width - padR}" y2="${y(score)}" stroke="#f0dbe6" stroke-width="1" />` +
+          `<line x1="${padL}" y1="${y(score)}" x2="${width - padR}" y2="${y(score)}" stroke="#e0d0d8" stroke-width="1" stroke-dasharray="2,2" />` +
           `<text x="${padL - 8}" y="${y(score) + 3}" font-size="9" fill="#9c8896" text-anchor="end">${score}</text>`
       )
       .join("");
@@ -312,7 +470,8 @@
       .join("");
 
     evolutionChart.innerHTML = `
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Évolution des scores dans le temps">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Évolution des blessures de l'âme dans le temps">
+        ${bands}
         ${gridLines}
         ${paths}
         ${dateLabels}

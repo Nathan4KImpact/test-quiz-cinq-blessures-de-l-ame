@@ -109,7 +109,7 @@ const QUESTIONS = [
   "J'ai besoin de m'assurer que les choses sont faites comme convenu.",
   "J'ai du mal à laisser les autres gérer une situation sans intervenir.",
   "Je ressens une forte déception ou de la colère lorsqu'une promesse n'est pas tenue.",
-  "J'anticipe souvent les difficultés afin d'éviter les mauvaises surprises.",
+  "J'anticipe les difficultés afin d'éviter les mauvaises surprises.",
   "Je peux me sentir blessé(e) lorsque la confiance est rompue ou que je me sens trompé(e).",
   "Je protège ce qui est important pour moi, ainsi que les personnes auxquelles je tiens.",
   "Je remarque rapidement les écarts entre ce qui est dit et ce qui est réellement fait.",
@@ -117,7 +117,7 @@ const QUESTIONS = [
   "Il me faut du temps pour accorder pleinement ma confiance à une nouvelle personne.",
   "Je préfère prendre les choses en main pour être certain(e) que tout se passe bien.",
   // Rejet (11-20)
-  "Je préfère parfois rester en retrait lors des échanges professionnels ou familiaux.",
+  "Je préfère rester en retrait lors des échanges professionnels ou familiaux.",
   "Je crains que mes opinions, mes choix ou mes émotions soient mal compris ou jugés.",
   "J'ai tendance à minimiser mes qualités ou mes réussites pour ne pas attirer l'attention sur moi.",
   "Il m'arrive de douter de ma place au sein d'une équipe, de ma famille ou dans mes relations.",
@@ -142,7 +142,7 @@ const QUESTIONS = [
   "Je redoute de faire une erreur ou d'être jugé(e) devant les personnes qui me sont proches.",
   "J'ai tendance à en faire plus que nécessaire pour répondre aux attentes de ma famille, de mon entourage ou dans mon travail.",
   "J'ai du mal à dire non, de peur de décevoir ou d'être perçu(e) comme égoïste.",
-  "Je me sens parfois mal à l'aise lorsque l'on me complimente ou que l'on attire l'attention sur moi.",
+  "Je me sens mal à l'aise lorsque l'on me complimente ou que l'on attire l'attention sur moi.",
   "J'ai tendance à minimiser mes qualités ou à me dévaloriser dans mes propos.",
   "Je fais souvent passer les besoins et le bien-être des autres avant les miens.",
   "Je préfère supporter une situation qui me fait souffrir plutôt que d'exprimer ce que je ressens ou de poser mes limites.",
@@ -178,8 +178,16 @@ const ANSWER_OPTIONS = [
 // Chaque blessure est notée sur 10 questions (max 30 points bruts),
 // ramenée sur 50 pour correspondre au barème de lecture du test original.
 function levelFor(score) {
-  if (score >= 40) return { label: "Blessure très dominante", tier: "high" };
+  if (score >= 40) return { label: "Blessure dominante", tier: "high" };
   if (score >= 29) return { label: "Blessure modérée", tier: "moderate" };
   if (score >= 20) return { label: "Blessure peu présente", tier: "low" };
   return { label: "Blessure peu marquée", tier: "minimal" };
+}
+
+// Tout le contenu du test est écrit avec la convention "mot(e)" (ex.
+// "accepté(e)"). genderize() résout cette convention selon le genre choisi :
+// "homme" -> "accepté", "femme" (ou toute autre valeur) -> "acceptée".
+function genderize(text, gender) {
+  if (typeof text !== "string") return text;
+  return gender === "homme" ? text.replace(/\(e\)/g, "") : text.replace(/\(e\)/g, "e");
 }

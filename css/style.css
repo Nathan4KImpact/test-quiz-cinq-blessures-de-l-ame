@@ -6,15 +6,33 @@
   --ink: #3a2e3a;
   --ink-soft: #6b5b6b;
   --bg: #fdf6f9;
+  --bg-start: #fff8fb;
+  --bg-end: #f7ecf3;
   --card-bg: #ffffff;
   --border: #f0dbe6;
   --shadow: 0 10px 30px -12px rgba(150, 60, 110, 0.25);
+  --shadow-accent: rgba(194, 71, 139, 0.55);
   --radius: 18px;
   --tier-high: #c2478b;
   --tier-moderate: #d98c3f;
   --tier-low: #7c9fbf;
   --tier-minimal: #9aa89a;
   font-size: 16px;
+}
+
+/* Thème "Homme" (Kanegnon) : mêmes tokens, palette bleue. Activé en
+   posant data-gender="homme" sur <body> dès que le genre est choisi. */
+body[data-gender="homme"] {
+  --rose: #2f6fb0;
+  --rose-dark: #1f5490;
+  --rose-light: #dceaf7;
+  --lavender: #4a4fd1;
+  --bg: #eef5fc;
+  --bg-start: #f5f9ff;
+  --bg-end: #e8f1fa;
+  --border: #d9e6f2;
+  --shadow: 0 10px 30px -12px rgba(31, 84, 144, 0.25);
+  --shadow-accent: rgba(47, 111, 176, 0.55);
 }
 
 * {
@@ -25,11 +43,12 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: radial-gradient(circle at top, #fff8fb 0%, var(--bg) 55%, #f7ecf3 100%);
+  background: radial-gradient(circle at top, var(--bg-start) 0%, var(--bg) 55%, var(--bg-end) 100%);
   color: var(--ink);
   font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease;
 }
 
 #app {
@@ -220,6 +239,57 @@ input[type="tel"]:focus {
   accent-color: var(--rose);
 }
 
+.gender-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.gender-option {
+  position: relative;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  background: #fffafc;
+  transition: all 0.15s ease;
+}
+
+.gender-option input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.gender-option .gender-label {
+  display: block;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.gender-option .gender-sublabel {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.gender-option:has(input:checked) {
+  border-color: var(--rose);
+  background: var(--rose-light);
+  box-shadow: 0 4px 14px -6px var(--shadow-accent);
+}
+
+.gender-option:has(input:focus-visible) {
+  outline: 2px solid var(--rose);
+  outline-offset: 2px;
+}
+
 .section-note {
   text-align: center;
   color: var(--ink-soft);
@@ -259,7 +329,7 @@ input[type="tel"]:focus {
 .btn-primary {
   background: linear-gradient(135deg, var(--rose), var(--lavender));
   color: #fff;
-  box-shadow: 0 8px 20px -6px rgba(194, 71, 139, 0.55);
+  box-shadow: 0 8px 20px -6px var(--shadow-accent);
 }
 
 .btn-primary:disabled {
@@ -371,7 +441,7 @@ input[type="tel"]:focus {
   background: linear-gradient(135deg, var(--rose), var(--lavender));
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 6px 16px -6px rgba(194, 71, 139, 0.6);
+  box-shadow: 0 6px 16px -6px var(--shadow-accent);
 }
 
 .quiz-nav {
