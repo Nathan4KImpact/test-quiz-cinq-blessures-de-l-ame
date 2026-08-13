@@ -387,22 +387,17 @@
   // présente (20-28), peu marquée (<20). Le lecteur peut ainsi lire à
   // quelle catégorie appartient chaque score sans se référer à la légende.
   const SEVERITY_BANDS = [
-    { min: 40, max: 50, color: "rgba(194, 71, 139, 0.10)", label: "Dominante" },
-    { min: 29, max: 40, color: "rgba(217, 140, 63, 0.10)", label: "Modérée" },
-    { min: 20, max: 29, color: "rgba(124, 159, 191, 0.10)", label: "Peu présente" },
-    { min: 0, max: 20, color: "rgba(154, 168, 154, 0.10)", label: "Peu marquée" },
+    { min: 40, max: 50, color: "rgba(194, 71, 139, 0.10)", textColor: "#a13570", label: "Dominante" },
+    { min: 29, max: 40, color: "rgba(217, 140, 63, 0.10)", textColor: "#a05e1e", label: "Modérée" },
+    { min: 20, max: 29, color: "rgba(124, 159, 191, 0.10)", textColor: "#4d7290", label: "Peu présente" },
+    { min: 0, max: 20, color: "rgba(154, 168, 154, 0.10)", textColor: "#5f6f5f", label: "Peu marquée" },
   ];
 
   function renderEvolutionChart(attempts, range) {
     const filtered = filterByRange(attempts, range);
-    evolutionLegend.innerHTML =
-      WOUNDS.map(
-        (w) => `<span><i class="dot" style="background:${w.color}"></i> ${w.name}</span>`
-      ).join("") +
-      SEVERITY_BANDS.map(
-        (b) =>
-          `<span><i class="band-swatch" style="background:${b.color.replace("0.10", "0.5")}"></i> ${b.label} (${b.min}${b.max === 50 ? "-50" : "-" + (b.max - 1)})</span>`
-      ).join("");
+    evolutionLegend.innerHTML = WOUNDS.map(
+      (w) => `<span><i class="dot" style="background:${w.color}"></i> ${w.name}</span>`
+    ).join("");
 
     if (filtered.length === 0) {
       evolutionChart.innerHTML = `<p class="evolution-empty">Aucune passation dans cette période.</p>`;
@@ -411,7 +406,9 @@
 
     const width = 640;
     const height = 280;
-    const padL = 36;
+    // Colonne de gauche élargie pour accueillir les libellés verticaux
+    // des zones de sévérité, en plus des repères d'axe.
+    const padL = 96;
     const padR = 16;
     const padT = 16;
     const padB = 30;
@@ -431,10 +428,25 @@
       return padT + innerH - (score / 50) * innerH;
     }
 
+    // Bandes de fond + libellé de sévérité rendu verticalement dans la
+    // gouttière gauche, centré sur sa zone. Les valeurs numériques sont
+    // affichées séparément sur l'axe Y (grid lines), donc le libellé
+    // ne contient que la catégorie. textLength garantit que le texte
+    // s'adapte à la hauteur de la bande, quelle qu'elle soit.
+    const LABEL_X = padL - 46;
     const bands = SEVERITY_BANDS.map((b) => {
       const yTop = y(b.max);
       const yBot = y(b.min);
-      return `<rect x="${padL}" y="${yTop}" width="${innerW}" height="${yBot - yTop}" fill="${b.color}" />`;
+      const yMid = (yTop + yBot) / 2;
+      const bandHeight = yBot - yTop;
+      const rect = `<rect x="${padL}" y="${yTop}" width="${innerW}" height="${bandHeight}" fill="${b.color}" />`;
+      // Espace disponible pour le libellé rotatif (hauteur de bande - marge).
+      const available = Math.max(0, bandHeight - 8);
+      const label =
+        available >= 26
+          ? `<text x="${LABEL_X}" y="${yMid}" font-size="10" font-weight="700" fill="${b.textColor}" text-anchor="middle" transform="rotate(-90 ${LABEL_X} ${yMid})" textLength="${available}" lengthAdjust="spacingAndGlyphs">${b.label}</text>`
+          : "";
+      return rect + label;
     }).join("");
 
     const gridLines = [0, 20, 29, 40, 50]
