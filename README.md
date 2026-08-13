@@ -17,16 +17,21 @@ rapport personnalisé, et permet un suivi dans le temps.
 - 50 affirmations (10 par blessure), notées de 1 (Non) à 3 (Oui) ; la
   blessure en cours n'est pas révélée pendant le test, pour ne pas influencer
   les réponses
-- Recueille prénom, nom, email (obligatoire), téléphone/ville/code postal
-  (facultatifs), avec consentement explicite
+- **Homme (Kanegnon) ou Femme (Leaman)** : palette adaptée (rose ↔ bleu) et
+  toutes les formulations « accepté(e) » accordées au genre choisi
+- Recueille prénom, nom, téléphone (obligatoire — sert d'identifiant pour
+  relier les tests successifs), email/ville/code postal (facultatifs), avec
+  consentement explicite
 - Calcule la blessure dominante (et les ex æquo) et n'explique en détail que
-  celle-ci — plus la blessure suivante au classement quand il n'y a pas
-  d'ex æquo — pour une première lecture non écrasante
-- Chaque passation est enregistrée (base Supabase) et reliée aux passations
-  précédentes de la même personne via son email, pour suivre son évolution
-- **Interface admin** protégée par mot de passe : liste de tous les
-  participants, et pour chacun un graphique d'évolution des 5 scores dans le
-  temps (6 mois / 1 an / 3 ans / 5 ans / tout)
+  celle-ci — plus la blessure « modérée » qui suit au classement quand il n'y
+  a pas d'ex æquo — pour une première lecture non écrasante
+- Chaque passation est enregistrée (base Supabase) et reliée aux tests
+  précédents de la même personne via son téléphone, pour suivre son évolution
+- **Interface admin** protégée par mot de passe : liste filtrable de tous les
+  participants (blessure dominante & modérée en aperçu), et pour chacun un
+  graphique d'évolution des 5 blessures dans le temps (6 mois / 1 an / 3 ans
+  / 5 ans / tout) avec les zones de sévérité en fond. Chaque test passé peut
+  être ouvert pour voir le rapport complet tel que l'utilisateur l'a vu.
 - Rappel automatique par e-mail si une personne n'a pas refait le test depuis
   6 mois (optionnel, via Resend)
 - Bouton pour réserver une séance de coaching (e-mail pré-rempli) et bouton
@@ -70,6 +75,10 @@ fonctions serverless — via une clé secrète côté serveur — peuvent y acc�
    recommandée pour des données sensibles).
 2. Dans le dashboard du projet : **SQL Editor → New query**, coller le
    contenu de [`sql/schema.sql`](sql/schema.sql), puis **Run**.
+   - **Base existante V2 ?** exécuter à la place la migration
+     [`sql/migrations/002_phone_identity_and_gender.sql`](sql/migrations/002_phone_identity_and_gender.sql)
+     (ajoute le genre, rend l'email facultatif, fait du téléphone
+     l'identifiant unique).
 3. Dans **Project Settings → API**, relever :
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra

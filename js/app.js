@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "blessures-ame-quiz-v2";
+  const STORAGE_KEY = "blessures-ame-quiz-v3";
   const TOTAL = QUIZ.length; // 50
   const SUBMIT_TIMEOUT_MS = 7000;
 
@@ -21,6 +21,7 @@
 
   function emptyState() {
     return {
+      gender: "",
       firstName: "",
       lastName: "",
       email: "",
@@ -41,6 +42,10 @@
   };
 
   const startForm = document.getElementById("start-form");
+  const genderInputs = document.querySelectorAll('input[name="gender"]');
+  const verseWelcome = document.getElementById("verse-text-welcome");
+  const verseResults = document.getElementById("verse-text-results");
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
   const firstNameInput = document.getElementById("first-name");
   const lastNameInput = document.getElementById("last-name");
   const emailInput = document.getElementById("email");
@@ -111,6 +116,27 @@
     return answers.filter((a) => a !== null).length;
   }
 
+  // ---------- Genre (thème + texte) ----------
+  // Capture le gabarit brut ("Bien-aimé(e), ...") avant toute genderisation,
+  // pour pouvoir régénérer le texte à chaque changement de genre.
+  const verseTemplate = verseWelcome ? verseWelcome.textContent.trim() : "";
+
+  function applyGenderTheme(gender) {
+    document.body.dataset.gender = gender || "";
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute("content", gender === "homme" ? "#2f6fb0" : "#c2478b");
+    }
+    const verseText = genderize(verseTemplate, gender);
+    if (verseWelcome) verseWelcome.textContent = verseText;
+    if (verseResults) verseResults.textContent = verseText;
+  }
+
+  genderInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) applyGenderTheme(input.value);
+    });
+  });
+
   // ---------- Screen switching ----------
   function showScreen(name) {
     Object.entries(screens).forEach(([key, el]) => {
@@ -147,6 +173,10 @@
   }
 
   function fillFormFromState() {
+    genderInputs.forEach((input) => {
+      input.checked = input.value === state.gender;
+    });
+    applyGenderTheme(state.gender);
     firstNameInput.value = state.firstName || "";
     lastNameInput.value = state.lastName || "";
     emailInput.value = state.email || "";
@@ -157,8 +187,10 @@
 
   startForm.addEventListener("submit", (e) => {
     e.preventDefault();
+    const checkedGender = [...genderInputs].find((input) => input.checked);
     state = {
       ...emptyState(),
+      gender: checkedGender ? checkedGender.value : "",
       firstName: firstNameInput.value.trim(),
       lastName: lastNameInput.value.trim(),
       email: emailInput.value.trim(),
@@ -194,7 +226,7 @@
     progressFill.style.width = pct + "%";
     progressTrack.setAttribute("aria-valuenow", String(index + 1));
 
-    questionText.textContent = q.text;
+    questionText.textContent = genderize(q.text, state.gender);
 
     answerOptions.innerHTML = "";
     ANSWER_OPTIONS.forEach((opt) => {
@@ -270,6 +302,7 @@
   // ---------- Envoi au serveur ----------
   async function submitAttempt() {
     const payload = {
+      gender: state.gender,
       firstName: state.firstName,
       lastName: state.lastName,
       email: state.email,
@@ -344,15 +377,15 @@
       : "Tes résultats";
 
     if (state.attemptNumber) {
-      attemptMeta.textContent = `Passation n°${state.attemptNumber} — ${formatDate(new Date())}`;
+      attemptMeta.textContent = `Test n°${state.attemptNumber} — ${formatDate(new Date())}`;
       attemptMeta.hidden = false;
     } else {
       attemptMeta.hidden = true;
     }
 
-    dominantName.textContent = dominant.map((d) => d.wound.name).join(" & ");
+    dominantName.textContent = dominant.map((d) => d.wound.name).join(" - ");
     dominantMask.textContent =
-      "Masque : " + dominant.map((d) => d.wound.mask).join(" & ");
+      "Masque : " + dominant.map((d) => d.wound.mask).join(" - ");
     dominantScore.textContent =
       dominant.length > 1
         ? `Blessures ex æquo — ${dominant[0].score} / 50 — ${dominant[0].level.label}`
@@ -430,17 +463,18 @@
         item.classList.toggle("open");
       });
 
+      const g = state.gender;
       const body = document.createElement("div");
       body.className = "accordion-body";
       body.innerHTML = `
         <h4>Besoins clés</h4>
-        <p>${r.wound.needs}</p>
+        <p>${genderize(r.wound.needs, g)}</p>
         <h4>Comprendre</h4>
-        <p>${r.wound.understand}</p>
+        <p>${genderize(r.wound.understand, g)}</p>
         <h4>Cela peut se traduire par</h4>
-        <ul>${r.wound.signs.map((s) => `<li>${s}</li>`).join("")}</ul>
+        <ul>${r.wound.signs.map((s) => `<li>${genderize(s, g)}</li>`).join("")}</ul>
         <h4>3 actions pour te repositionner (dès cette semaine)</h4>
-        <ol>${r.wound.actions.map((a) => `<li>${a}</li>`).join("")}</ol>
+        <ol>${r.wound.actions.map((a) => `<li>${genderize(a, g)}</li>`).join("")}</ol>
       `;
 
       item.appendChild(toggle);
@@ -476,6 +510,7 @@
     clearState();
     state = emptyState();
     startForm.reset();
+    applyGenderTheme("");
     resumeBanner.hidden = true;
     showScreen("welcome");
   });

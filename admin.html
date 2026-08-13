@@ -46,6 +46,9 @@
     <div class="card">
       <div class="table-toolbar">
         <input type="search" id="search-input" placeholder="Rechercher un nom, un email, une ville…" />
+        <select id="wound-filter" aria-label="Filtrer par blessure dominante">
+          <option value="">Toutes les blessures dominantes</option>
+        </select>
       </div>
       <div class="table-scroll">
         <table id="participants-table" class="admin-table">
@@ -56,7 +59,7 @@
               <th>Ville</th>
               <th>Dernier test</th>
               <th>Passations</th>
-              <th>Blessure dominante</th>
+              <th>Blessures dominante / modérée</th>
             </tr>
           </thead>
           <tbody id="participants-tbody"></tbody>
@@ -74,7 +77,7 @@
 
     <div class="card">
       <div class="range-toolbar">
-        <h3>Évolution des scores</h3>
+        <h3>Évolution des blessures de l'âme</h3>
         <div class="range-buttons" id="range-buttons">
           <button type="button" data-range="6" class="range-btn">6 mois</button>
           <button type="button" data-range="12" class="range-btn">1 an</button>
@@ -88,7 +91,8 @@
     </div>
 
     <div class="card">
-      <h3>Détail des passations</h3>
+      <h3>Détail des tests passés</h3>
+      <p class="section-note-admin">Clique sur un test pour voir le rapport complet, comme celui affiché à l'utilisateur.</p>
       <div class="table-scroll">
         <table class="admin-table" id="attempts-table">
           <thead>
@@ -106,6 +110,11 @@
           <tbody id="attempts-tbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <div class="card" id="attempt-report-card" hidden>
+      <h3 id="attempt-report-title">Rapport du test</h3>
+      <div id="attempt-report"><!-- generated in JS --></div>
     </div>
   </section>
 

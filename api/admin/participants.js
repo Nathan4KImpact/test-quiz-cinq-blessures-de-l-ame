@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
 
   try {
     const participants = await supabaseRequest(
-      `/participants?select=id,email,first_name,last_name,phone,city,postal_code,created_at,last_test_at&order=last_test_at.desc.nullslast`
+      `/participants?select=id,email,first_name,last_name,phone,gender,city,postal_code,created_at,last_test_at&order=last_test_at.desc.nullslast`
     );
 
     const attempts = await supabaseRequest(
