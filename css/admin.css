@@ -273,6 +273,12 @@
   min-width: 480px;
 }
 
+/* Sur le graphique d'évolution, la légende des blessures est centrée
+   sous le graphe pour équilibrer visuellement l'ensemble. */
+#evolution-legend {
+  justify-content: center;
+}
+
 .evolution-empty {
   text-align: center;
   color: var(--ink-soft);
