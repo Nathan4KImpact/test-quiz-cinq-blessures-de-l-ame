@@ -280,6 +280,26 @@
   font-size: 0.9rem;
 }
 
+/* Rapport détaillé d'un test passé (page détail admin). */
+.report-block {
+  margin-bottom: 22px;
+}
+
+.report-chart {
+  margin: 0 0 26px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-chart h4 {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+}
+
+#attempt-report .accordion {
+  margin-bottom: 0;
+}
+
 @media (max-width: 640px) {
   .admin-header {
     flex-direction: column;
