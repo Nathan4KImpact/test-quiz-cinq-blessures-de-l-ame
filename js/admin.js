@@ -411,7 +411,9 @@
     const padL = 96;
     const padR = 16;
     const padT = 16;
-    const padB = 30;
+    // padB agrandi car les libellés de date sont désormais en oblique et
+    // occupent plus de hauteur qu'un simple texte horizontal.
+    const padB = 44;
     const innerW = width - padL - padR;
     const innerH = height - padT - padB;
 
@@ -473,12 +475,17 @@
       }
     });
 
+    // Labels de date en oblique (~30°) pour éviter le chevauchement quand
+    // deux tests sont rapprochés dans le temps. text-anchor="end" +
+    // transform rotate autour du point d'ancrage juste sous chaque tick.
     const dateLabels = filtered
       .map((a, i) => {
         if (filtered.length > 8 && i % Math.ceil(filtered.length / 8) !== 0 && i !== filtered.length - 1) {
           return "";
         }
-        return `<text x="${x(i)}" y="${height - 8}" font-size="9" fill="#9c8896" text-anchor="middle">${formatDate(a.taken_at)}</text>`;
+        const anchorX = x(i);
+        const anchorY = height - padB + 16;
+        return `<text x="${anchorX}" y="${anchorY}" font-size="9" fill="#9c8896" text-anchor="end" transform="rotate(-30 ${anchorX} ${anchorY})">${formatDate(a.taken_at)}</text>`;
       })
       .join("");
 
