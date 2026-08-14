@@ -19,6 +19,12 @@
   const backBtn = document.getElementById("back-btn");
   const adminPrintBtn = document.getElementById("admin-print-btn");
   const dashboardPrintBtn = document.getElementById("dashboard-print-btn");
+  const importParticipantsBtn = document.getElementById("import-participants-btn");
+  const importParticipantsInput = document.getElementById("import-participants-input");
+  const exportParticipantsBtn = document.getElementById("export-participants-btn");
+  const importAttemptsBtn = document.getElementById("import-attempts-btn");
+  const importAttemptsInput = document.getElementById("import-attempts-input");
+  const exportAttemptsBtn = document.getElementById("export-attempts-btn");
   const participantInfo = document.getElementById("participant-info");
   const rangeButtons = document.getElementById("range-buttons");
   const evolutionChart = document.getElementById("evolution-chart");
@@ -190,10 +196,42 @@
             ${moderateBlock}
           </div>
         </td>
+        <td class="actions-cell">
+          <button type="button" class="btn-icon btn-danger" data-action="delete-participant" data-id="${escapeHtml(p.id)}" title="Supprimer ce participant" aria-label="Supprimer ${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}">Supprimer</button>
+        </td>
       `;
-      tr.addEventListener("click", () => openDetail(p.id));
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest("[data-action]")) return;
+        openDetail(p.id);
+      });
+      const delBtn = tr.querySelector('[data-action="delete-participant"]');
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        confirmDeleteParticipant(p);
+      });
       participantsTbody.appendChild(tr);
     });
+  }
+
+  async function confirmDeleteParticipant(p) {
+    const label = `${p.first_name} ${p.last_name}`.trim();
+    const ok = window.confirm(
+      `Supprimer définitivement « ${label} » et toutes ses passations ?\n\nCette action est irréversible.`
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/admin/participant?id=${encodeURIComponent(p.id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Suppression impossible.");
+        return;
+      }
+      await loadDashboard();
+    } catch (err) {
+      alert("Erreur réseau lors de la suppression.");
+    }
   }
 
   function applyFilters() {
@@ -282,14 +320,49 @@
         <td>${a.score_humiliation}</td>
         <td>${a.score_injustice}</td>
         <td>${escapeHtml(dominantLabel(a.dominant_wounds))}</td>
+        <td class="actions-cell">
+          <button type="button" class="btn-icon btn-danger" data-action="delete-attempt" data-id="${escapeHtml(a.id || "")}" title="Supprimer cette passation" aria-label="Supprimer le test ${a.attempt_number}">Supprimer</button>
+        </td>
       `;
-      tr.addEventListener("click", () => {
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest("[data-action]")) return;
         [...attemptsTbody.children].forEach((row) => row.classList.remove("selected"));
         tr.classList.add("selected");
         renderAttemptReport(a, currentDetail && currentDetail.participant);
       });
+      const delBtn = tr.querySelector('[data-action="delete-attempt"]');
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        confirmDeleteAttempt(a);
+      });
       attemptsTbody.appendChild(tr);
     });
+  }
+
+  async function confirmDeleteAttempt(a) {
+    if (!a.id) {
+      alert("Cette passation n'a pas d'identifiant : impossible de la supprimer.");
+      return;
+    }
+    const ok = window.confirm(
+      `Supprimer définitivement le test n°${a.attempt_number} du ${formatDate(a.taken_at)} ?\n\nCette action est irréversible.`
+    );
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/admin/attempt?id=${encodeURIComponent(a.id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Suppression impossible.");
+        return;
+      }
+      if (currentDetail && currentDetail.participant) {
+        await openDetail(currentDetail.participant.id);
+      }
+    } catch (err) {
+      alert("Erreur réseau lors de la suppression.");
+    }
   }
 
   function levelFromScore(score) {
@@ -511,6 +584,84 @@
       </svg>
     `;
   }
+
+  // ---------- Import / Export ----------
+  exportParticipantsBtn.addEventListener("click", () => {
+    window.location.href = "/api/admin/export";
+  });
+
+  importParticipantsBtn.addEventListener("click", () => {
+    importParticipantsInput.value = "";
+    importParticipantsInput.click();
+  });
+
+  importParticipantsInput.addEventListener("change", async () => {
+    const file = importParticipantsInput.files && importParticipantsInput.files[0];
+    if (!file) return;
+    const text = await file.text();
+    try {
+      const res = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "Content-Type": "text/csv" },
+        body: text,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || "Import impossible.");
+        return;
+      }
+      const msg = [
+        `${data.created || 0} participant(s) créé(s).`,
+        `${data.updated || 0} participant(s) mis à jour.`,
+        data.errors && data.errors.length ? `\n${data.errors.length} erreur(s) :\n- ${data.errors.slice(0, 10).join("\n- ")}` : "",
+      ].join("\n");
+      alert(msg);
+      await loadDashboard();
+    } catch (err) {
+      alert("Erreur réseau pendant l'import.");
+    }
+  });
+
+  exportAttemptsBtn.addEventListener("click", () => {
+    if (!currentDetail || !currentDetail.participant) return;
+    window.location.href = `/api/admin/export-attempts?participantId=${encodeURIComponent(currentDetail.participant.id)}`;
+  });
+
+  importAttemptsBtn.addEventListener("click", () => {
+    if (!currentDetail || !currentDetail.participant) return;
+    importAttemptsInput.value = "";
+    importAttemptsInput.click();
+  });
+
+  importAttemptsInput.addEventListener("change", async () => {
+    const file = importAttemptsInput.files && importAttemptsInput.files[0];
+    if (!file) return;
+    if (!currentDetail || !currentDetail.participant) return;
+    const text = await file.text();
+    try {
+      const res = await fetch(
+        `/api/admin/import-attempts?participantId=${encodeURIComponent(currentDetail.participant.id)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "text/csv" },
+          body: text,
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || "Import impossible.");
+        return;
+      }
+      const msg = [
+        `${data.inserted || 0} passation(s) importée(s).`,
+        data.errors && data.errors.length ? `\n${data.errors.length} erreur(s) :\n- ${data.errors.slice(0, 10).join("\n- ")}` : "",
+      ].join("\n");
+      alert(msg);
+      await openDetail(currentDetail.participant.id);
+    } catch (err) {
+      alert("Erreur réseau pendant l'import.");
+    }
+  });
 
   // ---------- Init ----------
   loadDashboard();

@@ -46,12 +46,24 @@
 
     <div class="card admin-summary" id="admin-summary"><!-- generated in JS --></div>
 
+    <div class="alert-panel" role="note">
+      <strong>Note :</strong> l'import ne concerne <em>que</em> les participants (leurs
+      infos personnelles). Pour importer aussi leurs tests passés, ouvre la fiche
+      détail du participant concerné et utilise le bouton "Importer les tests" sur
+      cette page.
+    </div>
+
     <div class="card">
       <div class="table-toolbar">
         <input type="search" id="search-input" placeholder="Rechercher un nom, un email, une ville…" />
         <select id="wound-filter" aria-label="Filtrer par blessure dominante">
           <option value="">Toutes les blessures dominantes</option>
         </select>
+        <div class="table-toolbar-actions">
+          <button type="button" id="import-participants-btn" class="btn btn-ghost">Importer</button>
+          <button type="button" id="export-participants-btn" class="btn btn-ghost">Exporter</button>
+          <input type="file" id="import-participants-input" accept=".csv,text/csv" hidden />
+        </div>
       </div>
       <div class="table-scroll">
         <table id="participants-table" class="admin-table">
@@ -65,6 +77,7 @@
               <th>Dernier test</th>
               <th>Passations</th>
               <th>Blessures dominante / modérée</th>
+              <th class="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody id="participants-tbody"></tbody>
@@ -99,8 +112,17 @@
     </div>
 
     <div class="card">
-      <h3>Détail des tests passés</h3>
-      <p class="section-note-admin">Clique sur un test pour voir le rapport complet, comme celui affiché à l'utilisateur.</p>
+      <div class="attempts-header">
+        <div>
+          <h3>Détail des tests passés</h3>
+          <p class="section-note-admin">Clique sur un test pour voir le rapport complet, comme celui affiché à l'utilisateur.</p>
+        </div>
+        <div class="table-toolbar-actions">
+          <button type="button" id="import-attempts-btn" class="btn btn-ghost">Importer les tests</button>
+          <button type="button" id="export-attempts-btn" class="btn btn-ghost">Exporter les tests</button>
+          <input type="file" id="import-attempts-input" accept=".csv,text/csv" hidden />
+        </div>
+      </div>
       <div class="table-scroll">
         <table class="admin-table" id="attempts-table">
           <thead>
@@ -113,6 +135,7 @@
               <th>Humiliation</th>
               <th>Injustice</th>
               <th>Dominante</th>
+              <th class="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody id="attempts-tbody"></tbody>
