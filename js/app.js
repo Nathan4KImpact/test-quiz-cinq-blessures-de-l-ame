@@ -499,7 +499,7 @@
     ].join("\n");
 
     bookingLink.href =
-      "mailto:nathanaeltalla@hotmail.com" +
+      "mailto:bouangaesther9@gmail.com" +
       `?subject=${encodeURIComponent(subject)}` +
       `&body=${encodeURIComponent(body)}`;
   }
