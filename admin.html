@@ -46,13 +46,6 @@
 
     <div class="card admin-summary" id="admin-summary"><!-- generated in JS --></div>
 
-    <div class="alert-panel" role="note">
-      <strong>Note :</strong> l'import ne concerne <em>que</em> les participants (leurs
-      infos personnelles). Pour importer aussi leurs tests passés, ouvre la fiche
-      détail du participant concerné et utilise le bouton "Importer les tests" sur
-      cette page.
-    </div>
-
     <div class="card">
       <div class="table-toolbar">
         <input type="search" id="search-input" placeholder="Rechercher un nom, un email, une ville…" />
@@ -148,6 +141,27 @@
       <div id="attempt-report"><!-- generated in JS --></div>
     </div>
   </section>
+
+  <!-- ===================== MODAL IMPORT ===================== -->
+  <div id="import-modal" class="modal-overlay" hidden aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+      <h2 id="import-modal-title">Importer des participants</h2>
+      <div class="modal-alert">
+        <strong>Note :</strong> l'import ne concerne <em>que</em> les participants
+        (leurs infos personnelles). Pour importer aussi leurs tests passés, ouvre
+        la fiche détail du participant concerné et utilise le bouton
+        "Importer les tests" sur cette page.
+      </div>
+      <p class="modal-hint">Format attendu : CSV avec les colonnes
+        <code>phone, email, gender, first_name, last_name, city, postal_code,
+        created_at, last_test_at</code>. Le téléphone sert de clé : les
+        participants existants sont mis à jour, les autres créés.</p>
+      <div class="modal-actions">
+        <button type="button" id="import-modal-cancel" class="btn btn-ghost">Annuler</button>
+        <button type="button" id="import-modal-confirm" class="btn btn-primary">Choisir un fichier…</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
