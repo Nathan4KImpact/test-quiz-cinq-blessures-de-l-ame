@@ -590,7 +590,32 @@
     window.location.href = "/api/admin/export";
   });
 
-  importParticipantsBtn.addEventListener("click", () => {
+  const importModal = document.getElementById("import-modal");
+  const importModalCancel = document.getElementById("import-modal-cancel");
+  const importModalConfirm = document.getElementById("import-modal-confirm");
+
+  function openImportModal() {
+    importModal.hidden = false;
+    importModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    importModalConfirm.focus();
+  }
+  function closeImportModal() {
+    importModal.hidden = true;
+    importModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+  }
+
+  importParticipantsBtn.addEventListener("click", openImportModal);
+  importModalCancel.addEventListener("click", closeImportModal);
+  importModal.addEventListener("click", (e) => {
+    if (e.target === importModal) closeImportModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !importModal.hidden) closeImportModal();
+  });
+  importModalConfirm.addEventListener("click", () => {
+    closeImportModal();
     importParticipantsInput.value = "";
     importParticipantsInput.click();
   });
