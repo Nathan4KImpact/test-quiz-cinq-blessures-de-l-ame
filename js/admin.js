@@ -18,6 +18,7 @@
 
   const backBtn = document.getElementById("back-btn");
   const adminPrintBtn = document.getElementById("admin-print-btn");
+  const dashboardPrintBtn = document.getElementById("dashboard-print-btn");
   const participantInfo = document.getElementById("participant-info");
   const rangeButtons = document.getElementById("range-buttons");
   const evolutionChart = document.getElementById("evolution-chart");
@@ -122,6 +123,13 @@
   });
 
   adminPrintBtn.addEventListener("click", () => window.print());
+  dashboardPrintBtn.addEventListener("click", () => window.print());
+
+  function genderLabel(gender) {
+    if (gender === "homme") return "Homme";
+    if (gender === "femme") return "Femme";
+    return "—";
+  }
 
   // ---------- Dashboard ----------
   async function loadDashboard() {
@@ -170,7 +178,9 @@
 
       tr.innerHTML = `
         <td>${escapeHtml(p.last_name)} ${escapeHtml(p.first_name)}</td>
+        <td>${escapeHtml(genderLabel(p.gender))}</td>
         <td>${escapeHtml(p.email || "—")}</td>
+        <td>${escapeHtml(p.phone || "—")}</td>
         <td>${escapeHtml(p.city || "—")}</td>
         <td>${formatDate(p.last_test_at)}</td>
         <td>${p.attemptsCount}</td>

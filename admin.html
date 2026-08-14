@@ -38,7 +38,10 @@
         <h1>Tableau de bord</h1>
         <p class="admin-subtitle">Toutes les passations du test.</p>
       </div>
-      <button type="button" id="logout-btn" class="btn btn-ghost">Se déconnecter</button>
+      <div class="admin-header-actions">
+        <button type="button" id="dashboard-print-btn" class="btn btn-ghost">Imprimer / enregistrer en PDF</button>
+        <button type="button" id="logout-btn" class="btn btn-ghost">Se déconnecter</button>
+      </div>
     </header>
 
     <div class="card admin-summary" id="admin-summary"><!-- generated in JS --></div>
@@ -55,7 +58,9 @@
           <thead>
             <tr>
               <th>Nom</th>
+              <th>Genre</th>
               <th>Email</th>
+              <th>Téléphone</th>
               <th>Ville</th>
               <th>Dernier test</th>
               <th>Passations</th>

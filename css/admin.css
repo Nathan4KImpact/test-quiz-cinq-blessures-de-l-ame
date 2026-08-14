@@ -58,6 +58,13 @@
   font-size: 1.4rem;
 }
 
+.admin-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .admin-subtitle {
   color: var(--ink-soft);
   font-size: 0.9rem;
@@ -322,23 +329,23 @@
 }
 
 @media print {
-  .admin-header,
+  .admin-header-actions,
   .detail-toolbar,
   .range-toolbar .range-buttons,
   .table-toolbar,
   #logout-btn,
   #back-btn,
-  #admin-print-btn {
+  #admin-print-btn,
+  #dashboard-print-btn {
     display: none !important;
   }
 
-  .admin-screen {
-    display: block !important;
+  #admin-login {
+    display: none !important;
   }
 
-  #admin-login,
-  #admin-dashboard {
-    display: none !important;
+  .admin-table {
+    white-space: normal;
   }
 
   body {
