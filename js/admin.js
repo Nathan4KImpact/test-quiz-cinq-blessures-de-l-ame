@@ -17,6 +17,7 @@
   const adminSummary = document.getElementById("admin-summary");
 
   const backBtn = document.getElementById("back-btn");
+  const adminPrintBtn = document.getElementById("admin-print-btn");
   const participantInfo = document.getElementById("participant-info");
   const rangeButtons = document.getElementById("range-buttons");
   const evolutionChart = document.getElementById("evolution-chart");
@@ -119,6 +120,8 @@
   backBtn.addEventListener("click", () => {
     showScreen("dashboard");
   });
+
+  adminPrintBtn.addEventListener("click", () => window.print());
 
   // ---------- Dashboard ----------
   async function loadDashboard() {

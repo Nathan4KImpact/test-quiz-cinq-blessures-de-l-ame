@@ -65,6 +65,15 @@
 }
 
 .back-btn {
+  margin-bottom: 0;
+}
+
+.detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
@@ -309,5 +318,30 @@
 @media (max-width: 640px) {
   .admin-header {
     flex-direction: column;
+  }
+}
+
+@media print {
+  .admin-header,
+  .detail-toolbar,
+  .range-toolbar .range-buttons,
+  .table-toolbar,
+  #logout-btn,
+  #back-btn,
+  #admin-print-btn {
+    display: none !important;
+  }
+
+  .admin-screen {
+    display: block !important;
+  }
+
+  #admin-login,
+  #admin-dashboard {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
   }
 }
