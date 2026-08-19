@@ -19,11 +19,7 @@
   const backBtn = document.getElementById("back-btn");
   const adminPrintBtn = document.getElementById("admin-print-btn");
   const dashboardPrintBtn = document.getElementById("dashboard-print-btn");
-  const importParticipantsBtn = document.getElementById("import-participants-btn");
-  const importParticipantsInput = document.getElementById("import-participants-input");
   const exportParticipantsBtn = document.getElementById("export-participants-btn");
-  const importAttemptsBtn = document.getElementById("import-attempts-btn");
-  const importAttemptsInput = document.getElementById("import-attempts-input");
   const exportAttemptsBtn = document.getElementById("export-attempts-btn");
   const participantInfo = document.getElementById("participant-info");
   const rangeButtons = document.getElementById("range-buttons");
@@ -467,107 +463,14 @@
     evolutionChart.innerHTML = buildEvolutionChartSvg(filtered);
   }
 
-  // ---------- Import / Export ----------
+  // ---------- Export ----------
   exportParticipantsBtn.addEventListener("click", () => {
     window.location.href = "/api/admin/export";
-  });
-
-  const importModal = document.getElementById("import-modal");
-  const importModalCancel = document.getElementById("import-modal-cancel");
-  const importModalConfirm = document.getElementById("import-modal-confirm");
-
-  function openImportModal() {
-    importModal.hidden = false;
-    importModal.setAttribute("aria-hidden", "false");
-    document.body.classList.add("modal-open");
-    importModalConfirm.focus();
-  }
-  function closeImportModal() {
-    importModal.hidden = true;
-    importModal.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("modal-open");
-  }
-
-  importParticipantsBtn.addEventListener("click", openImportModal);
-  importModalCancel.addEventListener("click", closeImportModal);
-  importModal.addEventListener("click", (e) => {
-    if (e.target === importModal) closeImportModal();
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !importModal.hidden) closeImportModal();
-  });
-  importModalConfirm.addEventListener("click", () => {
-    closeImportModal();
-    importParticipantsInput.value = "";
-    importParticipantsInput.click();
-  });
-
-  importParticipantsInput.addEventListener("change", async () => {
-    const file = importParticipantsInput.files && importParticipantsInput.files[0];
-    if (!file) return;
-    const text = await file.text();
-    try {
-      const res = await fetch("/api/admin/import", {
-        method: "POST",
-        headers: { "Content-Type": "text/csv" },
-        body: text,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data.error || "Import impossible.");
-        return;
-      }
-      const msg = [
-        `${data.created || 0} participant(s) créé(s).`,
-        `${data.updated || 0} participant(s) mis à jour.`,
-        data.errors && data.errors.length ? `\n${data.errors.length} erreur(s) :\n- ${data.errors.slice(0, 10).join("\n- ")}` : "",
-      ].join("\n");
-      alert(msg);
-      await loadDashboard();
-    } catch (err) {
-      alert("Erreur réseau pendant l'import.");
-    }
   });
 
   exportAttemptsBtn.addEventListener("click", () => {
     if (!currentDetail || !currentDetail.participant) return;
     window.location.href = `/api/admin/export-attempts?participantId=${encodeURIComponent(currentDetail.participant.id)}`;
-  });
-
-  importAttemptsBtn.addEventListener("click", () => {
-    if (!currentDetail || !currentDetail.participant) return;
-    importAttemptsInput.value = "";
-    importAttemptsInput.click();
-  });
-
-  importAttemptsInput.addEventListener("change", async () => {
-    const file = importAttemptsInput.files && importAttemptsInput.files[0];
-    if (!file) return;
-    if (!currentDetail || !currentDetail.participant) return;
-    const text = await file.text();
-    try {
-      const res = await fetch(
-        `/api/admin/import-attempts?participantId=${encodeURIComponent(currentDetail.participant.id)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "text/csv" },
-          body: text,
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data.error || "Import impossible.");
-        return;
-      }
-      const msg = [
-        `${data.inserted || 0} passation(s) importée(s).`,
-        data.errors && data.errors.length ? `\n${data.errors.length} erreur(s) :\n- ${data.errors.slice(0, 10).join("\n- ")}` : "",
-      ].join("\n");
-      alert(msg);
-      await openDetail(currentDetail.participant.id);
-    } catch (err) {
-      alert("Erreur réseau pendant l'import.");
-    }
   });
 
   // ---------- Init ----------

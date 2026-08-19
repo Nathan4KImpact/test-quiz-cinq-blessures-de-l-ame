@@ -53,9 +53,7 @@
           <option value="">Toutes les blessures dominantes</option>
         </select>
         <div class="table-toolbar-actions">
-          <button type="button" id="import-participants-btn" class="btn btn-ghost">Importer</button>
           <button type="button" id="export-participants-btn" class="btn btn-ghost">Exporter</button>
-          <input type="file" id="import-participants-input" accept=".csv,text/csv" hidden />
         </div>
       </div>
       <div class="table-scroll">
@@ -111,9 +109,7 @@
           <p class="section-note-admin">Clique sur un test pour voir le rapport complet, comme celui affiché à l'utilisateur.</p>
         </div>
         <div class="table-toolbar-actions">
-          <button type="button" id="import-attempts-btn" class="btn btn-ghost">Importer les tests</button>
           <button type="button" id="export-attempts-btn" class="btn btn-ghost">Exporter les tests</button>
-          <input type="file" id="import-attempts-input" accept=".csv,text/csv" hidden />
         </div>
       </div>
       <div class="table-scroll">
@@ -141,27 +137,6 @@
       <div id="attempt-report"><!-- generated in JS --></div>
     </div>
   </section>
-
-  <!-- ===================== MODAL IMPORT ===================== -->
-  <div id="import-modal" class="modal-overlay" hidden aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
-      <h2 id="import-modal-title">Importer des participants</h2>
-      <div class="modal-alert">
-        <strong>Note :</strong> l'import ne concerne <em>que</em> les participants
-        (leurs infos personnelles). Pour importer aussi leurs tests passés, ouvre
-        la fiche détail du participant concerné et utilise le bouton
-        "Importer les tests" sur cette page.
-      </div>
-      <p class="modal-hint">Format attendu : CSV avec les colonnes
-        <code>phone, email, gender, first_name, last_name, city, postal_code,
-        created_at, last_test_at</code>. Le téléphone sert de clé : les
-        participants existants sont mis à jour, les autres créés.</p>
-      <div class="modal-actions">
-        <button type="button" id="import-modal-cancel" class="btn btn-ghost">Annuler</button>
-        <button type="button" id="import-modal-confirm" class="btn btn-primary">Choisir un fichier…</button>
-      </div>
-    </div>
-  </div>
 
 </div>
 

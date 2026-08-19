@@ -131,75 +131,6 @@
   margin: 0 0 4px;
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(30, 12, 24, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1000;
-  animation: fade-in 0.18s ease both;
-}
-
-.modal-overlay[hidden] {
-  display: none;
-}
-
-.modal {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  max-width: 520px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(30, 12, 24, 0.25);
-  max-height: calc(100dvh - 40px);
-  overflow-y: auto;
-}
-
-.modal h2 {
-  margin: 0 0 14px;
-  font-size: 1.2rem;
-}
-
-.modal-alert {
-  background: #fff5e0;
-  border: 1px solid #f0d6a3;
-  color: #7a5a1e;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  margin-bottom: 14px;
-}
-
-.modal-hint {
-  color: var(--ink-soft);
-  font-size: 0.82rem;
-  line-height: 1.5;
-  margin: 0 0 18px;
-}
-
-.modal-hint code {
-  background: #fdeef4;
-  color: var(--rose-dark);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 0.78rem;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-body.modal-open {
-  overflow: hidden;
-}
-
 .actions-col {
   width: 1%;
   white-space: nowrap;
@@ -463,7 +394,6 @@ body.modal-open {
   .table-toolbar-actions,
   .actions-col,
   .actions-cell,
-  .modal-overlay,
   #logout-btn,
   #back-btn,
   #admin-print-btn,
