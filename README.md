@@ -75,10 +75,16 @@ fonctions serverless — via une clé secrète côté serveur — peuvent y acc�
    recommandée pour des données sensibles).
 2. Dans le dashboard du projet : **SQL Editor → New query**, coller le
    contenu de [`sql/schema.sql`](sql/schema.sql), puis **Run**.
-   - **Base existante V2 ?** exécuter à la place la migration
-     [`sql/migrations/002_phone_identity_and_gender.sql`](sql/migrations/002_phone_identity_and_gender.sql)
-     (ajoute le genre, rend l'email facultatif, fait du téléphone
-     l'identifiant unique).
+   - **Base existante ?** ne pas rejouer `schema.sql` : exécuter les
+     migrations manquantes, dans l'ordre, depuis `sql/migrations/` :
+     - [`002_phone_identity_and_gender.sql`](sql/migrations/002_phone_identity_and_gender.sql)
+       — ajoute le genre et fait du téléphone l'identifiant unique
+     - [`003_phone_international_prefix.sql`](sql/migrations/003_phone_international_prefix.sql)
+       — passe les téléphones au format international (`+33612345678`)
+       et **fusionne les historiques** des personnes qui apparaissaient
+       en double (une ligne au format national, une au format
+       international). ⚠️ Régler l'indicatif par défaut en tête du
+       fichier avant de l'exécuter.
 3. Dans **Project Settings → API**, relever :
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
