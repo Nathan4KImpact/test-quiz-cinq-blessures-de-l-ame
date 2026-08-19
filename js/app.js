@@ -25,12 +25,17 @@
       firstName: "",
       lastName: "",
       email: "",
+      phoneCountry: DEFAULT_PHONE_COUNTRY,
+      phoneNational: "",
       phone: "",
       city: "",
       postalCode: "",
       answers: new Array(TOTAL).fill(null),
       currentIndex: 0,
       attemptNumber: null,
+      // Passations précédentes de cette personne, renvoyées par /api/submit
+      // pour alimenter le graphique d'évolution et l'historique.
+      history: [],
     };
   }
 
@@ -50,6 +55,7 @@
   const lastNameInput = document.getElementById("last-name");
   const emailInput = document.getElementById("email");
   const phoneInput = document.getElementById("phone");
+  const phoneCountrySelect = document.getElementById("phone-country");
   const cityInput = document.getElementById("city");
   const postalCodeInput = document.getElementById("postal-code");
   const consentInput = document.getElementById("consent");
@@ -76,6 +82,14 @@
   const bookingLink = document.getElementById("booking-link");
   const printBtn = document.getElementById("print-btn");
   const restartBtn = document.getElementById("restart-btn");
+
+  const evolutionCard = document.getElementById("evolution-card");
+  const userRangeButtons = document.getElementById("user-range-buttons");
+  const userEvolutionChart = document.getElementById("user-evolution-chart");
+  const userEvolutionLegend = document.getElementById("user-evolution-legend");
+  const historyCard = document.getElementById("history-card");
+  const historyTbody = document.getElementById("history-tbody");
+  const historyViewing = document.getElementById("history-viewing");
 
   // ---------- Persistence ----------
   function saveState() {
@@ -172,6 +186,15 @@
     }
   }
 
+  // Remplit le sélecteur d'indicatif à partir de la liste de data.js.
+  PHONE_COUNTRIES.forEach((country) => {
+    const option = document.createElement("option");
+    option.value = country.code;
+    option.textContent = country.label;
+    phoneCountrySelect.appendChild(option);
+  });
+  phoneCountrySelect.value = DEFAULT_PHONE_COUNTRY;
+
   function fillFormFromState() {
     genderInputs.forEach((input) => {
       input.checked = input.value === state.gender;
@@ -180,7 +203,8 @@
     firstNameInput.value = state.firstName || "";
     lastNameInput.value = state.lastName || "";
     emailInput.value = state.email || "";
-    phoneInput.value = state.phone || "";
+    phoneCountrySelect.value = state.phoneCountry || DEFAULT_PHONE_COUNTRY;
+    phoneInput.value = state.phoneNational || "";
     cityInput.value = state.city || "";
     postalCodeInput.value = state.postalCode || "";
   }
@@ -188,19 +212,37 @@
   startForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const checkedGender = [...genderInputs].find((input) => input.checked);
+    const phoneCountry = phoneCountrySelect.value;
+    const phoneNational = phoneInput.value.trim();
+    const phone = buildInternationalPhone(phoneCountry, phoneNational);
+
+    // Garde-fou : le numéro national doit contenir des chiffres une fois
+    // l'indicatif et les zéros initiaux retirés.
+    if (!phone) {
+      phoneInput.setCustomValidity("Numéro de téléphone invalide.");
+      phoneInput.reportValidity();
+      return;
+    }
+    phoneInput.setCustomValidity("");
+
     state = {
       ...emptyState(),
       gender: checkedGender ? checkedGender.value : "",
       firstName: firstNameInput.value.trim(),
       lastName: lastNameInput.value.trim(),
       email: emailInput.value.trim(),
-      phone: phoneInput.value.trim(),
+      phoneCountry,
+      phoneNational,
+      phone,
       city: cityInput.value.trim(),
       postalCode: postalCodeInput.value.trim(),
     };
     saveState();
     startQuizFromCurrent();
   });
+
+  // Efface l'erreur personnalisée dès que l'utilisateur corrige sa saisie.
+  phoneInput.addEventListener("input", () => phoneInput.setCustomValidity(""));
 
   function startQuizFromCurrent() {
     showScreen("quiz");
@@ -328,6 +370,9 @@
         if (data && typeof data.attemptNumber === "number") {
           state.attemptNumber = data.attemptNumber;
         }
+        if (data && Array.isArray(data.history)) {
+          state.history = data.history;
+        }
       } else {
         console.warn("Échec de l'enregistrement de la passation :", res.status, data);
       }
@@ -367,17 +412,34 @@
     return { dominant, shown };
   }
 
+  // Reconstruit le même format que computeScores() à partir d'une
+  // passation stockée (qui ne contient que les scores, pas les réponses
+  // brutes) — permet de rejouer le rapport d'un test passé.
+  function resultsFromAttempt(attempt) {
+    return WOUNDS.map((w) => {
+      const score = attempt[SCORE_FIELDS[w.id]];
+      return { wound: w, score, level: levelFor(score) };
+    });
+  }
+
   // ---------- Results screen ----------
-  function renderResults() {
-    const results = computeScores().sort((a, b) => b.score - a.score);
+  // attempt === null : résultats du test qui vient d'être passé.
+  // attempt fourni : on rejoue le rapport d'une passation antérieure.
+  function renderResults(attempt) {
+    const isPast = !!attempt;
+    const results = (isPast ? resultsFromAttempt(attempt) : computeScores()).sort(
+      (a, b) => b.score - a.score
+    );
     const { dominant, shown } = pickHighlighted(results);
 
     resultsTitle.textContent = state.firstName
       ? `Résultats de ${state.firstName}`
       : "Tes résultats";
 
-    if (state.attemptNumber) {
-      attemptMeta.textContent = `Test passé : ${state.attemptNumber} — ${formatDate(new Date())}`;
+    const attemptNumber = isPast ? attempt.attempt_number : state.attemptNumber;
+    const attemptDate = isPast ? new Date(attempt.taken_at) : new Date();
+    if (attemptNumber) {
+      attemptMeta.textContent = `Test passé : ${attemptNumber} — ${formatDate(attemptDate)}`;
       attemptMeta.hidden = false;
     } else {
       attemptMeta.hidden = true;
@@ -394,6 +456,93 @@
     renderChart(results);
     renderAccordion(shown, dominant.map((d) => d.wound.id));
     setupBookingLink(dominant, state.firstName);
+    renderEvolution();
+    renderHistory(isPast ? attempt.attempt_number : null);
+  }
+
+  // ---------- Évolution et historique du participant ----------
+  let userRange = "all";
+
+  function renderEvolution() {
+    const history = state.history || [];
+    // Une seule passation ne raconte pas encore d'évolution.
+    if (history.length < 2) {
+      evolutionCard.hidden = true;
+      return;
+    }
+    evolutionCard.hidden = false;
+    userEvolutionLegend.innerHTML = buildEvolutionLegendHtml();
+
+    const filtered = filterAttemptsByRange(history, userRange);
+    if (filtered.length === 0) {
+      userEvolutionChart.innerHTML =
+        `<p class="evolution-empty">Aucun test passé sur cette période.</p>`;
+      return;
+    }
+    userEvolutionChart.innerHTML = buildEvolutionChartSvg(filtered);
+  }
+
+  userRangeButtons.addEventListener("click", (e) => {
+    const btn = e.target.closest(".range-btn");
+    if (!btn) return;
+    userRange = btn.dataset.range;
+    [...userRangeButtons.children].forEach((b) => {
+      b.classList.toggle("active", b.dataset.range === userRange);
+    });
+    renderEvolution();
+  });
+
+  function renderHistory(viewingAttemptNumber) {
+    const history = state.history || [];
+    if (history.length < 2) {
+      historyCard.hidden = true;
+      return;
+    }
+    historyCard.hidden = false;
+    historyTbody.innerHTML = "";
+
+    // Plus récent en premier : c'est celui qu'on veut voir d'abord.
+    [...history].reverse().forEach((attempt) => {
+      const ranked = resultsFromAttempt(attempt).sort((a, b) => b.score - a.score);
+      const topScore = ranked[0].score;
+      const dominant = ranked.filter((r) => r.score === topScore);
+      const isCurrent = viewingAttemptNumber
+        ? attempt.attempt_number === viewingAttemptNumber
+        : attempt.attempt_number === state.attemptNumber;
+
+      const tr = document.createElement("tr");
+      tr.className = "history-row" + (isCurrent ? " current" : "");
+      tr.innerHTML = `
+        <td>${attempt.attempt_number}</td>
+        <td>${formatDate(new Date(attempt.taken_at))}</td>
+        <td>${dominant.map((d) => d.wound.name).join(" - ")}</td>
+        <td>${topScore} / 50</td>
+      `;
+      tr.addEventListener("click", () => {
+        renderResults(attempt);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      historyTbody.appendChild(tr);
+    });
+
+    // Bandeau de contexte quand on consulte un test antérieur, avec un
+    // retour explicite vers le test qui vient d'être passé.
+    const latestNumber = state.attemptNumber || history[history.length - 1].attempt_number;
+    if (viewingAttemptNumber && viewingAttemptNumber !== latestNumber) {
+      historyViewing.innerHTML =
+        `Tu consultes le rapport du test n°${viewingAttemptNumber}. ` +
+        `<button type="button" class="link-btn" id="back-to-latest">Revenir à ton dernier test</button>`;
+      historyViewing.hidden = false;
+      const backBtn = document.getElementById("back-to-latest");
+      if (backBtn) {
+        backBtn.addEventListener("click", () => {
+          renderResults();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      }
+    } else {
+      historyViewing.hidden = true;
+    }
   }
 
   function formatDate(date) {

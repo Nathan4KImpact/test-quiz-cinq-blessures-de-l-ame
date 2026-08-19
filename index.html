@@ -45,12 +45,10 @@
           <label class="gender-option">
             <input type="radio" name="gender" value="femme" required />
             <span class="gender-label">Femme</span>
-            <span class="gender-sublabel">Leaman</span>
           </label>
           <label class="gender-option">
             <input type="radio" name="gender" value="homme" required />
             <span class="gender-label">Homme</span>
-            <span class="gender-sublabel">Kanegnon</span>
           </label>
         </div>
 
@@ -61,7 +59,13 @@
         <input type="text" id="last-name" name="last-name" autocomplete="family-name" placeholder="Ex. Dupont" maxlength="60" required />
 
         <label for="phone">Téléphone</label>
-        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="06 12 34 56 78" maxlength="30" required />
+        <div class="phone-row">
+          <select id="phone-country" name="phone-country" aria-label="Indicatif téléphonique" required>
+            <!-- generated in JS -->
+          </select>
+          <input type="tel" id="phone" name="phone" autocomplete="tel-national" placeholder="6 12 34 56 78" maxlength="20" required />
+        </div>
+        <p class="field-hint">L'indicatif du pays est obligatoire : il permet de retrouver ton test si tu le repasses plus tard.</p>
 
         <label for="email">Email</label>
         <input type="email" id="email" name="email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
@@ -156,6 +160,46 @@
       <p class="section-note">Pour cette première lecture, seules la blessure dominante et la blessure modérée sont détaillées ci-dessous afin de cibler les mécanismes qui influencent le plus ton quotidien, tes réactions et tes relations actuelles.</p>
       <div id="wound-accordion" class="accordion"><!-- generated in JS --></div>
 
+      <!-- Suivi dans le temps : visible seulement à partir du 2e test -->
+      <section id="evolution-card" class="card" hidden>
+        <div class="range-toolbar">
+          <h3>Ton évolution</h3>
+          <div class="range-buttons" id="user-range-buttons">
+            <button type="button" data-range="6" class="range-btn">6 mois</button>
+            <button type="button" data-range="12" class="range-btn">1 an</button>
+            <button type="button" data-range="36" class="range-btn">3 ans</button>
+            <button type="button" data-range="all" class="range-btn active">Tout</button>
+          </div>
+        </div>
+        <p class="section-note evolution-intro">
+          Voici comment tes 5 blessures ont évolué au fil de tes tests. Refaire
+          le test régulièrement rend visibles les déplacements qui s'opèrent
+          en toi.
+        </p>
+        <div id="user-evolution-chart" class="evolution-chart"></div>
+        <div class="legend" id="user-evolution-legend"></div>
+      </section>
+
+      <!-- Historique des tests passés : chaque ligne rejoue le rapport -->
+      <section id="history-card" class="card" hidden>
+        <h3>Tes tests passés</h3>
+        <p class="section-note">Clique sur un test pour revoir le rapport de cette période.</p>
+        <div class="table-scroll">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>Date</th>
+                <th>Blessure dominante</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+        <p id="history-viewing" class="history-viewing" hidden></p>
+      </section>
+
       <div class="card cta-card">
         <h3>Aller plus loin</h3>
         <p>
@@ -179,6 +223,7 @@
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/evolution-chart.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
