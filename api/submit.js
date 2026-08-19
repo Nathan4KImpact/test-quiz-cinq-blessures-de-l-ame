@@ -160,7 +160,29 @@ module.exports = async (req, res) => {
       }),
     });
 
-    res.status(200).json({ attemptNumber, scores: scaled, dominant });
+    // Historique complet de cette personne, renvoyé avec le résultat pour
+    // qu'elle puisse visualiser son évolution sur l'écran de résultats.
+    // Volontairement retourné ici plutôt que via un endpoint interrogeable
+    // par numéro : la personne vient de prouver qu'elle détient ce numéro
+    // en passant le test, alors qu'un endpoint ouvert exposerait
+    // l'historique de n'importe qui à partir d'un numéro deviné.
+    let history = [];
+    try {
+      history = await supabaseRequest(
+        `/attempts?participant_id=eq.${participantId}&select=attempt_number,taken_at,score_trahison,score_rejet,score_abandon,score_humiliation,score_injustice,dominant_wounds&order=attempt_number.asc`
+      );
+    } catch (historyErr) {
+      // L'historique est un bonus : son échec ne doit pas faire échouer
+      // l'enregistrement du test, déjà effectué à ce stade.
+      console.error("submit history error", historyErr);
+    }
+
+    res.status(200).json({
+      attemptNumber,
+      scores: scaled,
+      dominant,
+      history: history || [],
+    });
   } catch (err) {
     console.error("submit error", err);
     res.status(500).json({ error: "Erreur serveur." });

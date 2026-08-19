@@ -20,7 +20,7 @@
   font-size: 16px;
 }
 
-/* Thème "Homme" (Kanegnon) : mêmes tokens, palette bleue. Activé en
+/* Thème "Homme" : mêmes tokens, palette bleue. Activé en
    posant data-gender="homme" sur <body> dès que le genre est choisi. */
 body[data-gender="homme"] {
   --rose: #2f6fb0;
@@ -272,11 +272,61 @@ input[type="tel"]:focus {
   font-size: 0.95rem;
 }
 
-.gender-option .gender-sublabel {
-  display: block;
-  font-size: 0.78rem;
+/* Champ téléphone : indicatif pays + numéro national sur une même ligne. */
+.phone-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.phone-row select {
+  flex: 0 1 auto;
+  /* Assez large pour afficher le nom du pays en entier, sans écraser le
+     champ du numéro sur les petits écrans. */
+  min-width: 8.5rem;
+  max-width: 52%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fffafc;
+  color: var(--ink);
+}
+
+.phone-row select:focus {
+  outline: 2px solid var(--rose);
+  outline-offset: 1px;
+}
+
+.phone-row input[type="tel"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.field-hint {
+  font-size: 0.76rem;
   color: var(--ink-soft);
-  margin-top: 2px;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+/* Sur les écrans étroits, un sélecteur natif tronque le nom du pays.
+   On empile alors indicatif et numéro pour garder les deux lisibles. */
+@media (max-width: 430px) {
+  .phone-row {
+    flex-direction: column;
+  }
+
+  .phone-row select {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .phone-row input[type="tel"] {
+    width: 100%;
+  }
 }
 
 .gender-option:has(input:checked) {
@@ -755,18 +805,147 @@ input[type="tel"]:focus {
 
 /* ---------- Print ---------- */
 
+
+/* ---------- Évolution et historique du participant ---------- */
+
+.range-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.range-toolbar h3 {
+  margin: 0;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.range-btn {
+  border: 1.5px solid var(--border);
+  background: var(--card-bg);
+  color: var(--rose-dark);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.range-btn.active {
+  background: var(--rose);
+  border-color: var(--rose);
+  color: #fff;
+}
+
+.evolution-intro {
+  text-align: left;
+  margin: 0 0 14px;
+}
+
+.evolution-chart {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.evolution-chart svg {
+  width: 100%;
+  height: auto;
+  min-width: 460px;
+}
+
+.evolution-empty {
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 30px 0;
+  font-size: 0.9rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--border);
+}
+
+.history-table td {
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.history-row:hover {
+  background: var(--rose-light);
+}
+
+/* Le test actuellement affiché plus haut sur la page. */
+.history-row.current {
+  background: var(--rose-light);
+  font-weight: 700;
+}
+
+.history-viewing {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  background: var(--rose-light);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--rose-dark);
+  text-align: center;
+}
+
 @media print {
   .btn,
   .quiz-nav,
   #print-btn,
   .results-footer,
-  .cta-actions {
+  .cta-actions,
+  /* Les filtres de période et l'invite à cliquer n'ont pas de sens sur
+     papier : le PDF fige la vue complète telle qu'affichée. */
+  .range-buttons,
+  #history-card .section-note,
+  .history-viewing {
     display: none !important;
   }
 
   .accordion-body {
     max-height: none !important;
     padding: 0 20px 20px !important;
+  }
+
+  /* Le graphique d'évolution doit apparaître en entier, sans barre de
+     défilement horizontale masquant une partie des données. */
+  .evolution-chart {
+    overflow: visible !important;
+  }
+
+  .evolution-chart svg {
+    min-width: 0 !important;
   }
 
   body {

@@ -1,6 +1,6 @@
 # Test des 5 blessures de l'âme
 
-Ce test a pour but d'identifier les blessures dont la Leaman est porteuse,
+Ce test a pour but d'identifier les blessures dont une personne est porteuse,
 ainsi que les comportements qu'elle adopte le plus souvent, afin de proposer
 un accompagnement psychologique et spirituel adéquat.
 
@@ -17,7 +17,7 @@ rapport personnalisé, et permet un suivi dans le temps.
 - 50 affirmations (10 par blessure), notées de 1 (Non) à 3 (Oui) ; la
   blessure en cours n'est pas révélée pendant le test, pour ne pas influencer
   les réponses
-- **Homme (Kanegnon) ou Femme (Leaman)** : palette adaptée (rose ↔ bleu) et
+- **Homme ou Femme** : palette adaptée (rose ↔ bleu) et
   toutes les formulations « accepté(e) » accordées au genre choisi
 - Recueille prénom, nom, téléphone (obligatoire — sert d'identifiant pour
   relier les tests successifs), email (obligatoire, pour le contact et les

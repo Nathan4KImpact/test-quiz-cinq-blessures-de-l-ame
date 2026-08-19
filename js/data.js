@@ -191,3 +191,55 @@ function genderize(text, gender) {
   if (typeof text !== "string") return text;
   return gender === "homme" ? text.replace(/\(e\)/g, "") : text.replace(/\(e\)/g, "e");
 }
+
+// Indicatifs téléphoniques proposés à la saisie. Les pays francophones les
+// plus probables pour ce test sont placés en tête ; la liste reste courte
+// volontairement (une liste mondiale complète nuirait à la lisibilité sur
+// mobile). L'indicatif est obligatoire : combiné au numéro national, il
+// forme l'identifiant international qui relie les tests successifs d'une
+// même personne.
+const PHONE_COUNTRIES = [
+  { code: "+33", label: "France +33" },
+  { code: "+32", label: "Belgique +32" },
+  { code: "+41", label: "Suisse +41" },
+  { code: "+1", label: "Canada / USA +1" },
+  { code: "+352", label: "Luxembourg +352" },
+  { code: "+225", label: "Côte d'Ivoire +225" },
+  { code: "+237", label: "Cameroun +237" },
+  { code: "+221", label: "Sénégal +221" },
+  { code: "+243", label: "RD Congo +243" },
+  { code: "+242", label: "Congo-Brazzaville +242" },
+  { code: "+241", label: "Gabon +241" },
+  { code: "+229", label: "Bénin +229" },
+  { code: "+228", label: "Togo +228" },
+  { code: "+226", label: "Burkina Faso +226" },
+  { code: "+223", label: "Mali +223" },
+  { code: "+224", label: "Guinée +224" },
+  { code: "+227", label: "Niger +227" },
+  { code: "+235", label: "Tchad +235" },
+  { code: "+236", label: "Centrafrique +236" },
+  { code: "+261", label: "Madagascar +261" },
+  { code: "+230", label: "Maurice +230" },
+  { code: "+509", label: "Haïti +509" },
+  { code: "+212", label: "Maroc +212" },
+  { code: "+213", label: "Algérie +213" },
+  { code: "+216", label: "Tunisie +216" },
+  { code: "+44", label: "Royaume-Uni +44" },
+  { code: "+49", label: "Allemagne +49" },
+  { code: "+34", label: "Espagne +34" },
+  { code: "+39", label: "Italie +39" },
+  { code: "+351", label: "Portugal +351" },
+];
+
+const DEFAULT_PHONE_COUNTRY = "+33";
+
+// Assemble indicatif + numéro national en un numéro international
+// normalisé (chiffres uniquement, précédés de "+"). Le 0 initial des
+// numéros nationaux (ex. "06 12 34 56 78" en France) est retiré : il ne
+// s'utilise pas derrière un indicatif international.
+function buildInternationalPhone(countryCode, nationalNumber) {
+  const digits = String(nationalNumber || "").replace(/\D/g, "").replace(/^0+/, "");
+  const code = String(countryCode || "").replace(/[^\d+]/g, "");
+  if (!digits || !code) return "";
+  return `${code}${digits}`;
+}
