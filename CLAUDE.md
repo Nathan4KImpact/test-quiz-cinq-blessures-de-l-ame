@@ -79,6 +79,9 @@ admin.html                Tableau de bord admin
 css/style.css             Styles publics (thème rose Leaman + bleu Kanegnon via CSS vars)
 css/admin.css             Styles admin
 js/data.js                Contenu du test : 50 questions + fiches des 5 blessures + genderize()
+js/evolution-chart.js     Graphique d'évolution + légende, partagé public/admin
+js/progress.js            Détection des progrès entre passations (bandeau de félicitations)
+js/confetti.js            Confetti canvas maison, sans dépendance
 js/app.js                 Logique publique (état, scoring local, submit, rendu)
 js/admin.js               Logique admin
 sql/schema.sql             Schéma pour installation neuve

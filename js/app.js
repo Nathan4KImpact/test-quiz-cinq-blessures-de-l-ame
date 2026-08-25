@@ -72,6 +72,7 @@
   const answerOptions = document.getElementById("answer-options");
   const prevBtn = document.getElementById("prev-btn");
 
+  const progressCard = document.getElementById("progress-card");
   const attemptMeta = document.getElementById("attempt-meta");
   const dominantName = document.getElementById("dominant-name");
   const dominantMask = document.getElementById("dominant-mask");
@@ -335,7 +336,7 @@
 
   async function finishQuiz() {
     progressFill.style.width = "100%";
-    progressLabel.textContent = "Enregistrement de tes réponses…";
+    progressLabel.textContent = "Enregistrement des réponses…";
     await submitAttempt();
     renderResults();
     showScreen("results");
@@ -434,7 +435,7 @@
 
     resultsTitle.textContent = state.firstName
       ? `Résultats de ${state.firstName}`
-      : "Tes résultats";
+      : "Résultats du test";
 
     const attemptNumber = isPast ? attempt.attempt_number : state.attemptNumber;
     const attemptDate = isPast ? new Date(attempt.taken_at) : new Date();
@@ -453,11 +454,35 @@
         ? `Blessures ex æquo — ${dominant[0].score} / 50 — ${dominant[0].level.label}`
         : `Score : ${dominant[0].score} / 50 — ${dominant[0].level.label}`;
 
+    renderProgress(attemptNumber);
     renderChart(results);
     renderAccordion(shown, dominant.map((d) => d.wound.id));
     setupBookingLink(dominant, state.firstName);
     renderEvolution();
     renderHistory(isPast ? attempt.attempt_number : null);
+  }
+
+  // ---------- Bandeau de félicitations ----------
+  // Le confetti n'est tiré qu'une fois par affichage d'écran de résultats :
+  // rejouer un rapport passé depuis l'historique réaffiche le bandeau, mais
+  // sans relancer l'animation à chaque clic.
+  let confettiFired = false;
+
+  function renderProgress(attemptNumber) {
+    const progress = detectProgress(state.history || [], attemptNumber);
+    if (!progress) {
+      progressCard.hidden = true;
+      progressCard.innerHTML = "";
+      return;
+    }
+
+    progressCard.innerHTML = buildProgressHtml(progress, state.firstName);
+    progressCard.hidden = false;
+
+    if (!confettiFired) {
+      confettiFired = true;
+      launchConfetti();
+    }
   }
 
   // ---------- Évolution et historique du participant ----------
@@ -471,9 +496,12 @@
       return;
     }
     evolutionCard.hidden = false;
-    userEvolutionLegend.innerHTML = buildEvolutionLegendHtml();
 
     const filtered = filterAttemptsByRange(history, userRange);
+    // La légende est ordonnée sur les scores affichés : elle suit donc la
+    // fenêtre choisie, pas l'historique complet.
+    userEvolutionLegend.innerHTML = buildEvolutionLegendHtml(filtered);
+
     if (filtered.length === 0) {
       userEvolutionChart.innerHTML =
         `<p class="evolution-empty">Aucun test passé sur cette période.</p>`;
@@ -530,8 +558,8 @@
     const latestNumber = state.attemptNumber || history[history.length - 1].attempt_number;
     if (viewingAttemptNumber && viewingAttemptNumber !== latestNumber) {
       historyViewing.innerHTML =
-        `Tu consultes le rapport du test n°${viewingAttemptNumber}. ` +
-        `<button type="button" class="link-btn" id="back-to-latest">Revenir à ton dernier test</button>`;
+        `Rapport affiché : test passé ${viewingAttemptNumber}. ` +
+        `<button type="button" class="link-btn" id="back-to-latest">Revenir au dernier test</button>`;
       historyViewing.hidden = false;
       const backBtn = document.getElementById("back-to-latest");
       if (backBtn) {
@@ -622,7 +650,7 @@
         <p>${genderize(r.wound.understand, g)}</p>
         <h4>Cela peut se traduire par</h4>
         <ul>${r.wound.signs.map((s) => `<li>${genderize(s, g)}</li>`).join("")}</ul>
-        <h4>3 actions pour te repositionner (dès cette semaine)</h4>
+        <h4>3 actions pour se repositionner (dès cette semaine)</h4>
         <ol>${r.wound.actions.map((a) => `<li>${genderize(a, g)}</li>`).join("")}</ol>
       `;
 
