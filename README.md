@@ -54,6 +54,8 @@ js/data.js               Contenu du test : 50 questions + fiches des 5 blessures
 js/app.js                Logique de l'app publique (état, score, soumission, résultats)
 js/admin.js              Logique du tableau de bord admin
 sql/schema.sql            Schéma Supabase à exécuter une fois (SQL Editor)
+sql/migrations/           Migrations à jouer dans l'ordre sur une base existante
+sql/seed-demo.sql         Jeu de données fictives, facultatif (démo du suivi)
 api/submit.js             Enregistre une passation (participant + scores)
 api/admin/login.js        Authentification admin (mot de passe → cookie signé)
 api/admin/logout.js       Déconnexion admin
@@ -89,6 +91,15 @@ fonctions serverless — via une clé secrète côté serveur — peuvent y acc�
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
      `SUPABASE_SERVICE_ROLE_KEY`
+4. *(facultatif)* Pour voir tourner le suivi d'évolution, l'historique et
+   le bandeau de félicitations sans repasser le test cinq fois à la main :
+   exécuter [`sql/seed-demo.sql`](sql/seed-demo.sql). Il insère trois
+   personnes **fictives** (5, 2 et 1 passations), repérables à leur
+   téléphone `+3399000000x` et au suffixe « (démo) » de leur nom. Il est
+   ré-exécutable, et se supprime d'une ligne :
+   ```sql
+   delete from participants where phone like '+3399000000%';
+   ```
 
 ### 2. Variables d'environnement Vercel
 
