@@ -38,7 +38,7 @@ function evolutionFormatDate(iso) {
 }
 
 // Ne conserve que les passations comprises dans la fenêtre demandée.
-// range : "all" ou un nombre de mois ("6", "12", "36", "60").
+// range : "all" ou un nombre de mois ("1", "6", "12", "36", "60").
 function filterAttemptsByRange(attempts, range) {
   if (range === "all") return attempts;
   const months = Number(range);
