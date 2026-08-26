@@ -38,7 +38,7 @@ function evolutionFormatDate(iso) {
 }
 
 // Ne conserve que les passations comprises dans la fenêtre demandée.
-// range : "all" ou un nombre de mois ("6", "12", "36", "60").
+// range : "all" ou un nombre de mois ("1", "6", "12", "36", "60").
 function filterAttemptsByRange(attempts, range) {
   if (range === "all") return attempts;
   const months = Number(range);
@@ -161,8 +161,18 @@ function buildEvolutionChartSvg(attempts) {
 }
 
 // Légende des 5 blessures, commune aux deux usages du graphique.
-function buildEvolutionLegendHtml() {
-  return WOUNDS.map(
-    (w) => `<span><i class="dot" style="background:${w.color}"></i> ${w.name}</span>`
-  ).join("");
+//
+// L'ordre suit celui des lignes du graphique à leur extrémité droite,
+// c'est-à-dire les scores de la passation la plus récente, de la plus
+// dominante à la moins présente : l'œil retrouve chaque libellé à la même
+// hauteur relative que sa courbe. Sans passations (appel sans argument),
+// on retombe sur l'ordre de déclaration des blessures.
+function buildEvolutionLegendHtml(attempts) {
+  const latest = attempts && attempts.length ? attempts[attempts.length - 1] : null;
+  const ordered = latest
+    ? [...WOUNDS].sort((a, b) => latest[SCORE_FIELDS[b.id]] - latest[SCORE_FIELDS[a.id]])
+    : WOUNDS;
+  return ordered
+    .map((w) => `<span><i class="dot" style="background:${w.color}"></i> ${w.name}</span>`)
+    .join("");
 }

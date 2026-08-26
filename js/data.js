@@ -13,16 +13,16 @@ const WOUNDS = [
     color: "#c2478b",
     needs: "Confiance mutuelle, respect des engagements, sécurité affective et capacité à lâcher prise progressivement.",
     understand:
-      "Tu ressens une forte inquiétude lorsque les engagements ne sont pas respectés ou lorsque les comportements des autres te semblent imprévisibles. Cela peut t'amener à vouloir anticiper, contrôler ou vérifier afin de te sentir rassuré(e).",
+      "Une forte inquiétude apparaît lorsque les engagements ne sont pas respectés ou lorsque les comportements des autres semblent imprévisibles. Cela peut conduire à anticiper, contrôler ou vérifier pour retrouver un sentiment de sécurité.",
     signs: [
       "une tendance à vouloir organiser, prévoir ou contrôler les situations et les décisions familiales ;",
       "des difficultés à faire confiance ou à déléguer certaines responsabilités au sein du couple ou de la famille ;",
       "une forte réactivité lorsque les promesses ou les engagements ne sont pas tenus.",
     ],
     actions: [
-      "Clarifie les attentes et les engagements de chacun afin d'éviter les malentendus.",
-      "Confie volontairement une responsabilité à un proche sans intervenir systématiquement, en convenant simplement d'un moment d'échange.",
-      "Choisis une situation où tu acceptes de ne pas tout maîtriser et observe les effets sur ta sérénité.",
+      "Clarifier les attentes et les engagements de chacun afin d'éviter les malentendus.",
+      "Confier volontairement une responsabilité à un proche sans intervenir systématiquement, en convenant simplement d'un moment d'échange.",
+      "Choisir une situation où il est possible de ne pas tout maîtriser, puis observer les effets sur la sérénité.",
     ],
   },
   {
@@ -32,16 +32,16 @@ const WOUNDS = [
     color: "#7c5cbf",
     needs: "Acceptation, reconnaissance, sentiment d'appartenance et liberté d'être soi-même.",
     understand:
-      "Tu es particulièrement sensible au regard des autres et tu peux craindre de ne pas être pleinement accepté(e) ou de ne pas avoir ta place au sein de ta famille ou de tes relations.",
+      "Une sensibilité particulière au regard des autres, accompagnée de la crainte de ne pas être pleinement accepté(e) ou de ne pas avoir sa place au sein de la famille ou des relations.",
     signs: [
-      "une tendance à te mettre en retrait ou à ne pas exprimer tes besoins et tes émotions ;",
-      "une difficulté à demander de l'aide ou à partager ce que tu ressens par peur d'être jugé(e) ;",
-      "une autocritique importante qui limite ta spontanéité.",
+      "une tendance au retrait, ou à ne pas exprimer ses besoins et ses émotions ;",
+      "une difficulté à demander de l'aide ou à partager son ressenti, par peur d'être jugé(e) ;",
+      "une autocritique importante qui limite la spontanéité.",
     ],
     actions: [
-      "Exprime chaque jour un besoin, une opinion ou une émotion à un proche.",
-      "Demande à une personne de confiance ce qu'elle apprécie chez toi afin d'accueillir un regard positif.",
-      "Prends quelques minutes pour noter les moments où tu t'es senti(e) écouté(e), reconnu(e) ou accepté(e).",
+      "Exprimer chaque jour un besoin, une opinion ou une émotion à un proche.",
+      "Demander à une personne de confiance ce qu'elle apprécie, afin d'accueillir un regard positif.",
+      "Noter, en quelques minutes, les moments où l'on s'est senti(e) écouté(e), reconnu(e) ou accepté(e).",
     ],
   },
   {
@@ -51,16 +51,16 @@ const WOUNDS = [
     color: "#2b8a7e",
     needs: "Soutien rassurant, autonomie progressive et confiance en ses ressources.",
     understand:
-      "Tu crains d'être laissé(e) seul(e), de ne pas être suffisamment soutenu(e) ou de devoir faire face aux difficultés sans appui.",
+      "La crainte d'être laissé(e) seul(e), de ne pas être suffisamment soutenu(e) ou de devoir faire face aux difficultés sans appui.",
     signs: [
-      "un besoin fréquent d'être rassuré(e), encouragé(e) ou validé(e) par tes proches ;",
+      "un besoin fréquent d'être rassuré(e), encouragé(e) ou validé(e) par ses proches ;",
       "une difficulté à prendre certaines décisions seul(e) ;",
-      "une peur de la distance affective ou du manque de disponibilité des personnes importantes pour toi.",
+      "une peur de la distance affective ou du manque de disponibilité des personnes importantes.",
     ],
     actions: [
-      "Identifie clairement les situations où tu as réellement besoin de soutien et celles que tu peux gérer seul(e).",
-      "Accorde-toi chaque jour un moment pour prendre une décision sans rechercher immédiatement l'avis des autres.",
-      "Lorsque tu demandes de l'aide, exprime précisément ton besoin plutôt que d'attendre que l'autre le devine.",
+      "Identifier clairement les situations qui demandent réellement du soutien et celles qui peuvent être gérées seul(e).",
+      "S'accorder chaque jour un moment pour prendre une décision sans rechercher immédiatement l'avis des autres.",
+      "Au moment de demander de l'aide, exprimer précisément le besoin plutôt que d'attendre que l'autre le devine.",
     ],
   },
   {
@@ -70,16 +70,16 @@ const WOUNDS = [
     color: "#c97a2b",
     needs: "Respect, reconnaissance, estime de soi et droit de poser des limites.",
     understand:
-      "Tu as tendance à t'oublier pour préserver les autres, à culpabiliser lorsque tu penses à toi ou à accepter davantage que ce que tu souhaiterais réellement.",
+      "Une tendance à s'oublier pour préserver les autres, à culpabiliser au moment de penser à soi, ou à accepter davantage que ce qui est réellement souhaité.",
     signs: [
       "une difficulté à dire non ou à poser des limites claires ;",
-      "une tendance à faire passer les besoins des autres avant les tiens ;",
-      "une minimisation de tes réussites ou de ta valeur.",
+      "une tendance à faire passer les besoins des autres avant les siens ;",
+      "une minimisation de ses réussites ou de sa valeur.",
     ],
     actions: [
-      "Identifie une limite importante que tu souhaites faire respecter dans ta vie familiale ou relationnelle.",
-      "Exerce-toi à dire non avec bienveillance, en proposant si besoin une autre solution ou un autre moment.",
-      "Note chaque semaine trois situations où tu as pris soin de toi ou où tu as affirmé tes besoins avec respect.",
+      "Identifier une limite importante à faire respecter dans la vie familiale ou relationnelle.",
+      "S'exercer à dire non avec bienveillance, en proposant si besoin une autre solution ou un autre moment.",
+      "Noter chaque semaine trois situations de prise de soin de soi, ou d'affirmation de ses besoins avec respect.",
     ],
   },
   {
@@ -89,16 +89,16 @@ const WOUNDS = [
     color: "#3d6fb4",
     needs: "Équité, cohérence, clarté et droit à l'imperfection.",
     understand:
-      "Tu es particulièrement sensible au respect des règles, à l'équité et à la cohérence dans les relations. Tu es également exigeant(e) envers toi-même comme envers les autres.",
+      "Une sensibilité particulière au respect des règles, à l'équité et à la cohérence dans les relations, avec un niveau d'exigence élevé envers soi-même comme envers les autres.",
     signs: [
-      "des attentes élevées envers toi-même, ton partenaire ou tes proches ;",
+      "des attentes élevées envers soi-même, son partenaire ou ses proches ;",
       "une difficulté à accepter les imperfections, les imprévus ou les différences de fonctionnement ;",
-      "une forte réaction lorsque tu as le sentiment qu'une situation est injuste ou déséquilibrée.",
+      "une forte réaction face au sentiment qu'une situation est injuste ou déséquilibrée.",
     ],
     actions: [
-      "Accepte qu'une situation puisse être satisfaisante sans être parfaite.",
-      "Prends le temps d'échanger sur les attentes de chacun afin d'éviter les incompréhensions et de rechercher un équilibre.",
-      "Lorsque tu ressens une injustice, exprime d'abord le besoin touché (respect, équité, reconnaissance...) avant de formuler une demande concrète.",
+      "Accepter qu'une situation puisse être satisfaisante sans être parfaite.",
+      "Prendre le temps d'échanger sur les attentes de chacun afin d'éviter les incompréhensions et de rechercher un équilibre.",
+      "Face à un sentiment d'injustice, exprimer d'abord le besoin touché (respect, équité, reconnaissance...) avant de formuler une demande concrète.",
     ],
   },
 ];

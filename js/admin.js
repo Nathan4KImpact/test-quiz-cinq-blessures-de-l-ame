@@ -412,15 +412,29 @@
               <p>${genderize(r.wound.understand, gender)}</p>
               <h4>Cela peut se traduire par</h4>
               <ul>${r.wound.signs.map((s) => `<li>${genderize(s, gender)}</li>`).join("")}</ul>
-              <h4>3 actions pour te repositionner (dès cette semaine)</h4>
+              <h4>3 actions pour se repositionner (dès cette semaine)</h4>
               <ol>${r.wound.actions.map((a) => `<li>${genderize(a, gender)}</li>`).join("")}</ol>
             </div>
           </div>`;
       })
       .join("");
 
+    // Même bandeau de progrès que côté participant (sans le confetti :
+    // l'écran admin est un outil de lecture, pas la remise du résultat).
+    const progress = detectProgress(
+      (currentDetail && currentDetail.attempts) || [],
+      attempt.attempt_number
+    );
+    const progressBlock = progress
+      ? `<div class="card progress-card report-progress">${buildProgressHtml(
+          progress,
+          participant && participant.first_name
+        )}</div>`
+      : "";
+
     attemptReportTitle.textContent = `Rapport du test passé ${attempt.attempt_number} — ${formatDate(attempt.taken_at)}`;
     attemptReport.innerHTML = `
+      ${progressBlock}
       <div class="report-block">
         <p class="eyebrow">Blessure${dominantEntries.length > 1 ? "s" : ""} dominante${dominantEntries.length > 1 ? "s" : ""}</p>
         <h2>${escapeHtml(dominantName)}</h2>
@@ -453,7 +467,9 @@
 
   function renderEvolutionChart(attempts, range) {
     const filtered = filterAttemptsByRange(attempts, range);
-    evolutionLegend.innerHTML = buildEvolutionLegendHtml();
+    // La légende est ordonnée sur les scores affichés : elle suit donc la
+    // fenêtre choisie, pas l'historique complet.
+    evolutionLegend.innerHTML = buildEvolutionLegendHtml(filtered);
 
     if (filtered.length === 0) {
       evolutionChart.innerHTML = `<p class="evolution-empty">Aucune passation dans cette période.</p>`;

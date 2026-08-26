@@ -919,10 +919,67 @@ input[type="tel"]:focus {
   text-align: center;
 }
 
+/* ---------- Bandeau de félicitations ---------- */
+
+.progress-card {
+  border: 1.5px solid var(--rose);
+  border-left-width: 5px;
+  background: linear-gradient(135deg, var(--rose-light), var(--card-bg) 65%);
+}
+
+.progress-headline {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--rose-dark);
+}
+
+.progress-lead {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.progress-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-list li {
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.progress-list em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--rose-dark);
+}
+
+.progress-foot {
+  margin: 12px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+/* Le confetti se superpose à toute la page sans jamais capter un clic. */
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
 @media print {
   .btn,
   .quiz-nav,
   #print-btn,
+  /* Le confetti est une animation d'écran : il n'a rien à faire sur le PDF,
+     contrairement au bandeau de félicitations qui, lui, est conservé. */
+  .confetti-canvas,
   .results-footer,
   .cta-actions,
   /* Les filtres de période et l'invite à cliquer n'ont pas de sens sur
