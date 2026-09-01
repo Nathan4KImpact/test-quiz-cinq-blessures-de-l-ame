@@ -97,6 +97,10 @@ fonctions serverless — via une clé secrète côté serveur — peuvent y acc�
        — crée la table des codes de connexion à usage unique et
        normalise les e-mails existants en minuscules, pour que la
        connexion des participants retrouve le bon dossier
+     - [`005_participant_password.sql`](sql/migrations/005_participant_password.sql)
+       — ajoute le mot de passe participant (colonnes `password_hash`
+       et `password_set_at`, laissées vides pour les dossiers
+       existants)
 3. Dans **Project Settings → API**, relever :
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
@@ -126,10 +130,16 @@ Dans le projet Vercel : **Settings → Environment Variables**, ajouter :
 | `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié — sinon les codes risquent d'arriver en spam) |
 | `APP_URL` | non | URL publique de l'app, utilisée dans le lien du mail de rappel |
 
-⚠️ **Sans `RESEND_API_KEY`, la connexion des participants est
-indisponible** : l'écran « Retrouver mes résultats » affiche un message
-explicite et le reste de l'application continue de fonctionner
-normalement (passer le test, voir son bulletin, tableau de bord admin).
+⚠️ **Sans `RESEND_API_KEY`, la connexion par mot de passe fonctionne
+toujours**, mais les deux chemins qui passent par l'e-mail sont
+indisponibles : « mot de passe oublié » et la première connexion des
+personnes déjà en base (qui n'ont pas encore de mot de passe). L'écran
+affiche alors un message explicite.
+
+Note sur l'adresse d'expédition : `onboarding@resend.dev`, la valeur par
+défaut, ne peut envoyer qu'à l'adresse propriétaire du compte Resend.
+Elle sert à tester ; pour un usage réel, vérifier un domaine chez Resend
+et renseigner `REMINDER_FROM_EMAIL`.
 
 Aucune de ces valeurs n'a besoin d'être partagée en dehors du dashboard
 Vercel.

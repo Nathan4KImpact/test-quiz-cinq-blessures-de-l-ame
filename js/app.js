@@ -100,6 +100,12 @@
   const accountLogoutBtn = document.getElementById("account-logout");
   const goLoginBtn = document.getElementById("go-login-btn");
   const loginBackBtn = document.getElementById("login-back-btn");
+  const signupPasswordInput = document.getElementById("signup-password");
+  const passwordLoginForm = document.getElementById("password-login-form");
+  const passwordLoginEmail = document.getElementById("password-login-email");
+  const passwordLoginPassword = document.getElementById("password-login-password");
+  const goCodeBtn = document.getElementById("go-code-btn");
+  const backToPasswordBtn = document.getElementById("back-to-password-btn");
   const requestCodeForm = document.getElementById("request-code-form");
   const verifyCodeForm = document.getElementById("verify-code-form");
   const loginEmailInput = document.getElementById("login-email");
@@ -119,6 +125,13 @@
   const accountEvolutionChart = document.getElementById("account-evolution-chart");
   const accountEvolutionLegend = document.getElementById("account-evolution-legend");
   const accountHistoryTbody = document.getElementById("account-history-tbody");
+  const accountPasswordCard = document.getElementById("account-password-card");
+  const accountPasswordTitle = document.getElementById("account-password-title");
+  const accountPasswordNote = document.getElementById("account-password-note");
+  const accountPasswordForm = document.getElementById("account-password-form");
+  const accountPasswordInput = document.getElementById("account-password");
+  const accountPasswordConfirm = document.getElementById("account-password-confirm");
+  const accountPasswordMsg = document.getElementById("account-password-msg");
 
   // ---------- Persistence ----------
   function saveState() {
@@ -267,6 +280,7 @@
       city: cityInput.value.trim(),
       postalCode: postalCodeInput.value.trim(),
     };
+    pendingPassword = signupPasswordInput.value;
     saveState();
     startQuizFromCurrent();
   });
@@ -278,6 +292,12 @@
     showScreen("quiz");
     renderQuestion(state.currentIndex);
   }
+
+  // Mot de passe choisi au formulaire d'accueil. Délibérément gardé hors
+  // de `state` : celui-ci est sérialisé dans localStorage à chaque
+  // réponse, et un mot de passe en clair y resterait sur l'appareil —
+  // partagé ou non — longtemps après la fin du test.
+  let pendingPassword = "";
 
   // ---------- Quiz screen ----------
   let isTransitioning = false;
@@ -384,6 +404,10 @@
       postalCode: state.postalCode,
       answers: state.answers,
       consent: true,
+      // Ignoré côté serveur si le téléphone correspond déjà à un dossier :
+      // seul /api/auth/set-password, qui exige une session prouvée, peut
+      // changer le mot de passe d'un dossier existant.
+      password: pendingPassword,
     };
 
     try {
@@ -411,6 +435,9 @@
       // Hors-ligne ou serveur indisponible : on affiche quand même les résultats
       // calculés localement, sans numéro de passation.
     }
+    // Le mot de passe a fini son voyage : on ne le garde pas en mémoire.
+    pendingPassword = "";
+    signupPasswordInput.value = "";
     saveState();
   }
 
@@ -745,20 +772,60 @@
     loginError.hidden = false;
   }
 
-  function resetLoginForms() {
+  // Trois formulaires se partagent l'écran de connexion : mot de passe
+  // (chemin principal), demande de code puis saisie du code (chemin de
+  // secours). Un seul est visible à la fois.
+  function showLoginStep(step) {
     loginError.hidden = true;
-    verifyCodeForm.hidden = true;
-    requestCodeForm.hidden = false;
-    loginCodeInput.value = "";
+    passwordLoginForm.hidden = step !== "password";
+    requestCodeForm.hidden = step !== "request";
+    verifyCodeForm.hidden = step !== "verify";
+    if (step !== "verify") loginCodeInput.value = "";
   }
 
   goLoginBtn.addEventListener("click", () => {
-    resetLoginForms();
+    showLoginStep("password");
     showScreen("login");
   });
 
   loginBackBtn.addEventListener("click", () => showScreen("welcome"));
-  resendCodeBtn.addEventListener("click", resetLoginForms);
+  goCodeBtn.addEventListener("click", () => {
+    // L'adresse déjà saisie n'a pas à être retapée.
+    if (passwordLoginEmail.value.trim()) loginEmailInput.value = passwordLoginEmail.value.trim();
+    showLoginStep("request");
+  });
+  backToPasswordBtn.addEventListener("click", () => showLoginStep("password"));
+  resendCodeBtn.addEventListener("click", () => showLoginStep("request"));
+
+  passwordLoginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const submitBtn = passwordLoginForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: passwordLoginEmail.value.trim(),
+          password: passwordLoginPassword.value,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showLoginError(data.error || "E-mail ou mot de passe incorrect.");
+        return;
+      }
+      passwordLoginPassword.value = "";
+      if (await loadSession()) enterAccount();
+      else showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+    } catch (err) {
+      showLoginError("Erreur réseau. Réessayer dans un instant.");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
 
   requestCodeForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -819,6 +886,11 @@
       const loaded = await loadSession();
       if (loaded) {
         enterAccount();
+        // Arrivée par code : c'est le moment de proposer un mot de passe
+        // à qui n'en a pas encore, la carte est déjà mise en évidence.
+        if (!session.participant.hasPassword) {
+          accountPasswordCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       } else {
         showLoginError("Connexion établie mais dossier illisible. Réessayer.");
       }
@@ -836,8 +908,10 @@
     clearState();
     startForm.reset();
     applyGenderTheme("");
-    resetLoginForms();
+    showLoginStep("password");
     loginEmailInput.value = "";
+    passwordLoginEmail.value = "";
+    passwordLoginPassword.value = "";
     showScreen("welcome");
   });
 
@@ -917,9 +991,67 @@
     `;
 
     accountLastReportBtn.hidden = !latest;
+    renderPasswordCard();
     renderAccountEvolution();
     renderAccountHistory();
   }
+
+  // Un dossier ancien n'a pas encore de mot de passe : la carte invite
+  // alors à en définir un, pour que la prochaine connexion se passe du
+  // code e-mail. Sinon elle propose simplement d'en changer.
+  function renderPasswordCard() {
+    const has = !!session.participant.hasPassword;
+    accountPasswordTitle.textContent = has
+      ? "Changer de mot de passe"
+      : "Définir un mot de passe";
+    accountPasswordNote.textContent = has
+      ? "Le nouveau mot de passe remplacera l'actuel dès l'enregistrement."
+      : "Ce dossier n'a pas encore de mot de passe. En définir un permet de se connecter directement la prochaine fois, sans passer par un code.";
+    accountPasswordCard.classList.toggle("highlight", !has);
+    accountPasswordMsg.hidden = true;
+    accountPasswordInput.value = "";
+    accountPasswordConfirm.value = "";
+  }
+
+  accountPasswordForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const password = accountPasswordInput.value;
+    const confirm = accountPasswordConfirm.value;
+    accountPasswordMsg.hidden = true;
+    accountPasswordMsg.classList.remove("form-success");
+
+    if (password !== confirm) {
+      accountPasswordMsg.textContent = "Les deux mots de passe ne correspondent pas.";
+      accountPasswordMsg.hidden = false;
+      return;
+    }
+
+    const submitBtn = accountPasswordForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        accountPasswordMsg.textContent = data.error || "Enregistrement impossible.";
+        accountPasswordMsg.hidden = false;
+        return;
+      }
+      session.participant.hasPassword = true;
+      renderPasswordCard();
+      accountPasswordMsg.textContent = "Mot de passe enregistré.";
+      accountPasswordMsg.classList.add("form-success");
+      accountPasswordMsg.hidden = false;
+    } catch (err) {
+      accountPasswordMsg.textContent = "Erreur réseau. Réessayer dans un instant.";
+      accountPasswordMsg.hidden = false;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
 
   // Nom de la ou des blessures dominantes d'une passation stockée.
   function dominantNamesOf(attempt) {

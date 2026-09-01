@@ -47,14 +47,21 @@ quelle passation, import/export CSV, impression PDF, suppression.
   possible, quotas gratuits confortables, données portables.
 - **Auth admin = mot de passe + cookie HttpOnly signé HMAC**.
   Volontairement minimaliste : un seul admin.
-- **Auth participant = code à 6 chiffres envoyé par e-mail**, puis
-  cookie participant signé (rôle distinct de l'admin, 7 jours).
+- **Auth participant = e-mail + mot de passe** (chemin principal),
+  **code à 6 chiffres par e-mail** (chemin de secours), puis cookie
+  participant signé — rôle distinct de l'admin, 7 jours.
   Choisi *contre* une simple recherche par téléphone ou e-mail : sans
   preuve de possession, l'endpoint deviendrait un moyen de lire le
   suivi psychologique de n'importe qui à partir d'un identifiant
   deviné. Le code est stocké en HMAC (jamais en clair), expire en
   10 min, vaut pour un seul usage, tolère 5 essais, et le nombre
-  d'envois est plafonné par personne.
+  d'envois est plafonné par personne. Le mot de passe est haché en
+  **scrypt** (`api/_lib/password.js`) : un hachage rapide type SHA se
+  casserait par force brute hors ligne si la base fuyait.
+  Le code e-mail sert à deux choses : définir un premier mot de passe
+  (tous les dossiers antérieurs n'en ont pas) et en changer quand il
+  est oublié. Un seul endpoint couvre les deux, `set-password`, qui
+  exige une session déjà ouverte.
 
 ### Modèle de données
 
@@ -97,10 +104,13 @@ sql/schema.sql             Schéma pour installation neuve
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
 api/submit.js              Enregistre une passation (validation + upsert par téléphone)
 api/me.js                  Dossier du participant connecté (profil + historique)
-api/auth/request-code.js   Envoie un code à 6 chiffres par e-mail
+api/auth/login.js          Connexion e-mail + mot de passe (chemin principal)
+api/auth/request-code.js   Envoie un code à 6 chiffres par e-mail (secours)
 api/auth/verify-code.js    Vérifie le code, ouvre la session participant
+api/auth/set-password.js   Définit ou change le mot de passe (session requise)
 api/auth/logout.js         Déconnexion participant
 api/_lib/mailer.js         Envoi Resend minimaliste
+api/_lib/password.js       Hachage scrypt des mots de passe
 api/admin/login.js         Auth admin (compare le mot de passe, pose le cookie)
 api/admin/logout.js        Efface le cookie
 api/admin/participants.js  Liste + dernier résultat de chaque participant
@@ -159,6 +169,33 @@ explicitement chaque état actif** (`.active`, `.selected`,
 **Détection** : un test Playwright qui mesure le **ratio de contraste
 calculé** entre `color` et `backgroundColor` — un test fonctionnel
 passe très bien sur un bouton invisible.
+
+### Un endpoint ouvert ne doit jamais toucher à un secret
+
+**Contexte** : `/api/submit` est public et identifie la personne par son
+téléphone — c'est ce qui permet de relier les passations. En ajoutant le
+mot de passe au formulaire du test, la tentation était de le faire
+enregistrer par le même endpoint.
+**Le piège** : qui connaît un numéro de téléphone aurait pu poser un mot
+de passe sur le dossier de son titulaire, puis se connecter et lire tout
+son suivi psychologique. Une fonctionnalité de confort ouvrait une
+usurpation complète.
+**Règle** : `/api/submit` n'accepte un mot de passe que pour un dossier
+**qu'il crée**. Modifier celui d'un dossier existant passe uniquement par
+`set-password`, qui exige une session déjà prouvée par code e-mail.
+**Test associé** : une passation « pirate » sur le téléphone de
+quelqu'un, avec un mot de passe dans la charge utile, puis vérification
+que l'ancien mot de passe fonctionne toujours et que le nouveau est
+refusé.
+
+### Ne jamais faire transiter un secret par localStorage
+
+L'état du quiz est sérialisé dans `localStorage` à chaque réponse pour
+permettre la reprise. Y ranger le mot de passe choisi au formulaire
+l'aurait laissé en clair sur l'appareil — souvent partagé — longtemps
+après la fin du test. Il vit donc dans une variable de module
+(`pendingPassword`), effacée dès l'envoi. Un test relit `localStorage`
+après la passation pour vérifier que le mot de passe ne s'y trouve pas.
 
 ### Confidentialité et sécurité par construction
 

@@ -243,6 +243,10 @@ html[data-theme="signature"] .progress-card {
   border-left: 2px solid var(--rose);
 }
 
+html[data-theme="signature"] #account-password-card.highlight {
+  border-left: 3px solid var(--rose);
+}
+
 html[data-theme="signature"] .chart-track {
   background: rgba(44, 36, 48, 0.06);
 }

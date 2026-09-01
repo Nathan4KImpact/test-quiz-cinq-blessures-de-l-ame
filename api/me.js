@@ -15,13 +15,16 @@ module.exports = async (req, res) => {
   try {
     const found = await supabaseRequest(
       `/participants?id=eq.${participantId}` +
-        `&select=id,first_name,last_name,gender,email,phone,city,postal_code,created_at,last_test_at&limit=1`
+        `&select=id,first_name,last_name,gender,email,phone,city,postal_code,created_at,last_test_at,password_set_at&limit=1`
     );
     const participant = found && found[0];
     if (!participant) {
       res.status(404).json({ error: "Dossier introuvable." });
       return;
     }
+    // L'empreinte ne sort jamais de la base : l'interface a seulement
+    // besoin de savoir s'il faut proposer de définir un mot de passe.
+    participant.hasPassword = !!participant.password_set_at;
 
     const history = await supabaseRequest(
       `/attempts?participant_id=eq.${participantId}` +

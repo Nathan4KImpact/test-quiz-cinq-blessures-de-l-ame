@@ -1000,6 +1000,22 @@ input[type="tel"]:focus {
   gap: 10px;
 }
 
+/* Dossier sans mot de passe : la carte se signale d'elle-même, c'est la
+   seule action réellement à faire en arrivant par un code e-mail. */
+#account-password-card.highlight {
+  border-color: var(--rose);
+  border-left-width: 3px;
+}
+
+#account-password-card form {
+  margin-top: 4px;
+}
+
+.form-success {
+  color: #1d6b4a;
+  background: #e4f5ec;
+}
+
 .account-actions .btn {
   flex: 1 1 200px;
   margin: 0;
