@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="signature">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -7,11 +7,31 @@
 <meta name="theme-color" content="#c2478b" />
 <title>Test des 5 blessures de l'âme</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>" />
+<!-- Le thème mémorisé est appliqué avant le premier rendu : sinon la page
+     s'afficherait brièvement dans le thème par défaut avant de basculer. -->
+<script>
+  try {
+    var t = localStorage.getItem("blessures-ame-theme");
+    if (t === "classique" || t === "signature") document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
 <link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/themes.css" />
 </head>
 <body>
 
 <div id="app">
+
+  <div class="app-bar">
+    <div class="theme-switch" role="group" aria-label="Jeu de thèmes">
+      <button type="button" class="theme-btn" data-theme-choice="signature" aria-pressed="true">Signature</button>
+      <button type="button" class="theme-btn" data-theme-choice="classique" aria-pressed="false">Classique</button>
+    </div>
+    <div class="app-bar-actions">
+      <button type="button" id="account-entry" class="link-btn" hidden>Mon espace</button>
+      <button type="button" id="account-logout" class="link-btn" hidden>Se déconnecter</button>
+    </div>
+  </div>
 
   <!-- ===================== ÉCRAN D'ACCUEIL ===================== -->
   <section id="screen-welcome" class="screen" aria-hidden="false">
@@ -95,6 +115,104 @@
         ·
         <button type="button" id="discard-btn" class="link-btn">Recommencer à zéro</button>
       </p>
+
+      <p class="welcome-login-hint">
+        Test déjà passé ?
+        <button type="button" id="go-login-btn" class="link-btn">Retrouver mes résultats</button>
+      </p>
+    </div>
+  </section>
+
+  <!-- ===================== CONNEXION PARTICIPANT ===================== -->
+  <section id="screen-login" class="screen" aria-hidden="true">
+    <div class="card login-card">
+      <p class="dove" aria-hidden="true">🕊️</p>
+      <h1>Retrouver mes résultats</h1>
+
+      <!-- Étape 1 : l'adresse e-mail -->
+      <form id="request-code-form">
+        <p class="intro">
+          Un code à 6 chiffres est envoyé à l'adresse indiquée lors du test.
+          Il prouve que la boîte mail appartient bien à la personne
+          concernée — c'est ce qui protège les résultats de chacun.
+        </p>
+        <label for="login-email">Adresse e-mail</label>
+        <input type="email" id="login-email" name="login-email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
+        <button type="submit" class="btn btn-primary">Recevoir mon code</button>
+      </form>
+
+      <!-- Étape 2 : le code reçu -->
+      <form id="verify-code-form" hidden>
+        <p class="intro" id="code-sent-note"></p>
+        <label for="login-code">Code à 6 chiffres</label>
+        <input type="text" id="login-code" name="login-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456" class="code-input" required />
+        <button type="submit" class="btn btn-primary">Me connecter</button>
+        <p class="section-note">
+          Code non reçu ?
+          <button type="button" id="resend-code-btn" class="link-btn">Changer d'adresse ou renvoyer</button>
+        </p>
+      </form>
+
+      <p id="login-error" class="form-error" hidden></p>
+
+      <div class="results-footer">
+        <button type="button" id="login-back-btn" class="link-btn">Retour à l'accueil</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ESPACE PARTICIPANT ===================== -->
+  <section id="screen-account" class="screen" aria-hidden="true">
+    <div class="results-shell">
+
+      <div class="card account-header">
+        <p class="dove" aria-hidden="true">🕊️</p>
+        <h1 id="account-title">Mon espace</h1>
+        <p class="section-note" id="account-subtitle"></p>
+      </div>
+
+      <div class="card">
+        <div class="account-stats" id="account-stats"><!-- generated in JS --></div>
+        <div class="account-actions">
+          <button type="button" id="account-new-test" class="btn btn-primary">Faire un nouveau test</button>
+          <button type="button" id="account-last-report" class="btn btn-ghost">Voir mon dernier bulletin</button>
+        </div>
+      </div>
+
+      <!-- Évolution : visible à partir de la 2e passation -->
+      <section id="account-evolution-card" class="card" hidden>
+        <div class="range-toolbar">
+          <h3>Évolution des blessures de l'âme</h3>
+          <div class="range-buttons" id="account-range-buttons">
+            <button type="button" data-range="1" class="range-btn">1 mois</button>
+            <button type="button" data-range="6" class="range-btn">6 mois</button>
+            <button type="button" data-range="12" class="range-btn">1 an</button>
+            <button type="button" data-range="36" class="range-btn">3 ans</button>
+            <button type="button" data-range="all" class="range-btn active">Tout</button>
+          </div>
+        </div>
+        <div id="account-evolution-chart" class="evolution-chart"></div>
+        <div class="legend" id="account-evolution-legend"></div>
+      </section>
+
+      <section class="card">
+        <h3>Tests passés</h3>
+        <p class="section-note">Sélectionner un test pour en revoir le bulletin complet.</p>
+        <div class="table-scroll">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>Date</th>
+                <th>Blessure dominante</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="account-history-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
   </section>
 
@@ -219,6 +337,7 @@
       </div>
 
       <div class="results-footer">
+        <button type="button" id="back-to-account-btn" class="link-btn" hidden>← Retour à mon espace</button>
         <button type="button" id="restart-btn" class="link-btn">Refaire le test</button>
       </div>
     </div>
@@ -226,6 +345,7 @@
 
 </div>
 
+<script src="js/theme.js"></script>
 <script src="js/data.js"></script>
 <script src="js/evolution-chart.js"></script>
 <script src="js/progress.js"></script>

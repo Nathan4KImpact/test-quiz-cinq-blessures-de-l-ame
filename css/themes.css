@@ -1,0 +1,350 @@
+/* ============================================================
+   Jeux de thèmes
+   ============================================================
+
+   Deux ensembles cohabitent, choisis par l'attribut data-theme sur
+   <html> (posé avant le premier rendu par le script inline en <head>,
+   ce qui évite de voir la page changer d'apparence après coup) :
+
+     data-theme="classique"  → l'habillage d'origine, défini dans
+                               style.css. Ce fichier ne le touche pas.
+     data-theme="signature"  → l'habillage affiné ci-dessous.
+
+   Le genre reste porté par data-gender sur <body> : chaque thème
+   décline donc deux palettes. Les sélecteurs `html[data-theme] body`
+   (0,1,2) l'emportent sur `body[data-gender]` (0,1,1) de style.css, et
+   la variante masculine `html[data-theme] body[data-gender]` (0,2,2)
+   l'emporte à son tour — l'ordre de chargement n'a pas à être un
+   argument de correction.
+
+   Le thème signature s'appuie sur des surfaces translucides posées sur
+   un fond en dégradés diffus : c'est le flou d'arrière-plan qui donne
+   la profondeur, pas l'ombre portée. Les bordures descendent à un trait
+   d'un pixel très peu contrasté.
+   ============================================================ */
+
+/* ---------- Signature — palette féminine (par défaut) ---------- */
+
+html[data-theme="signature"] body {
+  --rose: #b0407a;
+  --rose-dark: #8a2f5f;
+  --rose-light: rgba(176, 64, 122, 0.1);
+  --lavender: #6d5aa8;
+  --ink: #2c2430;
+  --ink-soft: #6f6577;
+
+  --bg: #faf7f9;
+  --bg-start: #fdfbfc;
+  --bg-end: #f4eef3;
+
+  /* Surface translucide : le contenu derrière transparaît légèrement,
+     le flou fait le reste. */
+  --card-bg: rgba(255, 255, 255, 0.72);
+  --border: rgba(44, 36, 48, 0.08);
+  --hairline: rgba(44, 36, 48, 0.07);
+  --shadow: 0 1px 2px rgba(30, 20, 35, 0.04), 0 14px 36px -18px rgba(120, 50, 95, 0.3);
+  --shadow-accent: rgba(176, 64, 122, 0.4);
+  --radius: 20px;
+
+  --tier-high: #b0407a;
+  --tier-moderate: #c07f3a;
+  --tier-low: #6d90b4;
+  --tier-minimal: #8f9c8f;
+
+  --blob-a: rgba(176, 64, 122, 0.14);
+  --blob-b: rgba(109, 90, 168, 0.12);
+}
+
+/* ---------- Signature — palette masculine ---------- */
+
+html[data-theme="signature"] body[data-gender="homme"] {
+  --rose: #2b5f96;
+  --rose-dark: #1e4874;
+  --rose-light: rgba(43, 95, 150, 0.1);
+  --lavender: #4753a8;
+  --ink: #232a33;
+  --ink-soft: #62707f;
+
+  --bg: #f6f8fb;
+  --bg-start: #fbfcfe;
+  --bg-end: #eef3f9;
+
+  --border: rgba(35, 42, 51, 0.08);
+  --hairline: rgba(35, 42, 51, 0.07);
+  --shadow: 0 1px 2px rgba(20, 30, 45, 0.04), 0 14px 36px -18px rgba(30, 72, 116, 0.32);
+  --shadow-accent: rgba(43, 95, 150, 0.4);
+
+  --tier-high: #2b5f96;
+
+  --blob-a: rgba(43, 95, 150, 0.14);
+  --blob-b: rgba(71, 83, 168, 0.12);
+}
+
+/* ---------- Fond : dégradés diffus plutôt qu'un aplat ---------- */
+
+html[data-theme="signature"] body {
+  background:
+    radial-gradient(60ch 60ch at 12% -8%, var(--blob-a) 0%, transparent 60%),
+    radial-gradient(50ch 50ch at 105% 12%, var(--blob-b) 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-start) 0%, var(--bg) 45%, var(--bg-end) 100%);
+  background-attachment: fixed;
+  font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.005em;
+}
+
+/* ---------- Surfaces ---------- */
+
+html[data-theme="signature"] .card {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 30px 26px;
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* Un liseré clair sur l'arête haute : c'est ce qui fait lire la carte
+   comme une plaque de verre posée sur le fond, et non comme un aplat. */
+html[data-theme="signature"] .card {
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+html[data-theme="signature"] .dominant-card {
+  border-top: 1px solid var(--hairline);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Le filet de couleur du haut passe de 4px pleins à un dégradé de 3px
+   qui s'estompe sur les bords. */
+html[data-theme="signature"] .dominant-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--rose), var(--lavender), transparent);
+}
+
+/* ---------- Typographie ---------- */
+
+html[data-theme="signature"] h1 {
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+html[data-theme="signature"] h2,
+html[data-theme="signature"] h3 {
+  letter-spacing: -0.015em;
+}
+
+html[data-theme="signature"] .eyebrow {
+  letter-spacing: 0.14em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+html[data-theme="signature"] .intro,
+html[data-theme="signature"] .section-note {
+  line-height: 1.65;
+}
+
+/* ---------- Contrôles ---------- */
+
+html[data-theme="signature"] .btn {
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+html[data-theme="signature"] .btn-primary {
+  box-shadow: 0 1px 2px rgba(20, 15, 25, 0.1), 0 10px 24px -12px var(--shadow-accent);
+}
+
+html[data-theme="signature"] .btn-ghost {
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+html[data-theme="signature"] input[type="text"],
+html[data-theme="signature"] input[type="email"],
+html[data-theme="signature"] input[type="tel"],
+html[data-theme="signature"] input[type="password"],
+html[data-theme="signature"] .phone-row select,
+html[data-theme="signature"] .table-toolbar input[type="search"],
+html[data-theme="signature"] .table-toolbar select {
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+}
+
+html[data-theme="signature"] .answer-btn {
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+}
+
+html[data-theme="signature"] .gender-option {
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 14px;
+}
+
+html[data-theme="signature"] .range-btn {
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+}
+
+html[data-theme="signature"] .accordion-item {
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- États actifs ----------
+
+   Les règles ci-dessus ciblent `html[data-theme] .classe` (0,2,1), ce qui
+   passe devant les états de style.css écrits en `.classe.etat` (0,2,0) :
+   sans les reprises qui suivent, un bouton sélectionné perdrait son fond
+   tout en gardant son texte blanc — donc illisible. Chaque état est donc
+   redonné explicitement, à une spécificité supérieure. */
+
+html[data-theme="signature"] .answer-btn.selected {
+  background: linear-gradient(135deg, var(--rose), var(--lavender));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 18px -8px var(--shadow-accent);
+}
+
+html[data-theme="signature"] .range-btn.active {
+  background: var(--rose);
+  border-color: var(--rose);
+  color: #fff;
+}
+
+html[data-theme="signature"] .gender-option:has(input:checked) {
+  border-color: var(--rose);
+  background: var(--rose-light);
+}
+
+html[data-theme="signature"] .accordion-item[data-dominant="true"] {
+  border-color: var(--rose);
+}
+
+html[data-theme="signature"] .history-row.current,
+html[data-theme="signature"] .attempt-row.selected {
+  background: var(--rose-light);
+}
+
+html[data-theme="signature"] .progress-card {
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--rose);
+}
+
+html[data-theme="signature"] .chart-track {
+  background: rgba(44, 36, 48, 0.06);
+}
+
+/* ---------- Tableaux ---------- */
+
+html[data-theme="signature"] .admin-table th,
+html[data-theme="signature"] .history-table th {
+  border-bottom: 1px solid var(--hairline);
+  font-weight: 600;
+}
+
+html[data-theme="signature"] .admin-table td,
+html[data-theme="signature"] .history-table td {
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* ============================================================
+   Sélecteur de thème et barre d'application
+   ============================================================ */
+
+.app-bar {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* Sur l'admin, la barre suit la largeur du tableau de bord. */
+#admin-app .app-bar {
+  max-width: 960px;
+}
+
+.theme-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.theme-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.theme-btn:hover {
+  color: var(--rose-dark);
+}
+
+.theme-btn[aria-pressed="true"] {
+  background: var(--rose);
+  color: #fff;
+}
+
+.app-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+@media (max-width: 420px) {
+  .theme-btn {
+    padding: 6px 11px;
+    font-size: 0.72rem;
+  }
+}
+
+/* Ni la barre d'outils ni les effets de verre n'ont de sens sur papier :
+   le PDF doit sortir sur fond blanc opaque et parfaitement lisible. */
+@media print {
+  .app-bar {
+    display: none !important;
+  }
+
+  html[data-theme="signature"] body {
+    background: #fff !important;
+  }
+
+  html[data-theme="signature"] .card,
+  html[data-theme="signature"] .accordion-item,
+  html[data-theme="signature"] .answer-btn,
+  html[data-theme="signature"] .btn-ghost {
+    background: #fff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}

@@ -48,11 +48,17 @@ sont stockées dans un projet **Supabase** (Postgres géré).
 ```
 index.html              Écrans public : accueil (profil), quiz, résultats
 admin.html               Tableau de bord admin (login + suivi des participants)
-css/style.css            Styles de l'app publique
+css/style.css            Styles de l'app publique (structure + thème « classique »)
+css/themes.css           Thème « signature » + sélecteur de thème
 css/admin.css            Styles du tableau de bord admin
 js/data.js               Contenu du test : 50 questions + fiches des 5 blessures
-js/app.js                Logique de l'app publique (état, score, soumission, résultats)
+js/theme.js              Choix et mémorisation du jeu de thèmes
+js/app.js                Logique de l'app publique (état, score, soumission, résultats, espace participant)
 js/admin.js              Logique du tableau de bord admin
+api/auth/request-code.js  Envoie un code de connexion à 6 chiffres par e-mail
+api/auth/verify-code.js   Vérifie le code et ouvre la session participant
+api/auth/logout.js        Déconnexion du participant
+api/me.js                 Dossier du participant connecté (profil + historique)
 sql/schema.sql            Schéma Supabase à exécuter une fois (SQL Editor)
 sql/migrations/           Migrations à jouer dans l'ordre sur une base existante
 sql/seed-demo.sql         Jeu de données fictives, facultatif (démo du suivi)
@@ -87,6 +93,10 @@ fonctions serverless — via une clé secrète côté serveur — peuvent y acc�
        en double (une ligne au format national, une au format
        international). ⚠️ Régler l'indicatif par défaut en tête du
        fichier avant de l'exécuter.
+     - [`004_participant_login_codes.sql`](sql/migrations/004_participant_login_codes.sql)
+       — crée la table des codes de connexion à usage unique et
+       normalise les e-mails existants en minuscules, pour que la
+       connexion des participants retrouve le bon dossier
 3. Dans **Project Settings → API**, relever :
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
@@ -110,11 +120,16 @@ Dans le projet Vercel : **Settings → Environment Variables**, ajouter :
 | `SUPABASE_URL` | oui | URL du projet Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | oui | Clé `service_role` Supabase (secrète) |
 | `ADMIN_PASSWORD` | oui | Mot de passe pour accéder à `/admin.html` |
-| `SESSION_SECRET` | oui | Chaîne aléatoire longue, sert à signer le cookie admin (ex. générée avec `openssl rand -hex 32`) |
+| `SESSION_SECRET` | oui | Chaîne aléatoire longue ; signe le cookie admin, le cookie participant et les codes de connexion (ex. `openssl rand -hex 32`) |
 | `CRON_SECRET` | oui, si rappels activés | Chaîne aléatoire ; Vercel l'envoie automatiquement à la tâche planifiée pour l'authentifier |
-| `RESEND_API_KEY` | non | Active l'e-mail de rappel à 6 mois (compte gratuit sur [resend.com](https://resend.com)) |
-| `REMINDER_FROM_EMAIL` | non | Adresse d'expédition des rappels (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié) |
+| `RESEND_API_KEY` | oui, pour la connexion participant | Envoi des codes de connexion à 6 chiffres, et de l'e-mail de rappel à 6 mois (compte gratuit sur [resend.com](https://resend.com)) |
+| `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié — sinon les codes risquent d'arriver en spam) |
 | `APP_URL` | non | URL publique de l'app, utilisée dans le lien du mail de rappel |
+
+⚠️ **Sans `RESEND_API_KEY`, la connexion des participants est
+indisponible** : l'écran « Retrouver mes résultats » affiche un message
+explicite et le reste de l'application continue de fonctionner
+normalement (passer le test, voir son bulletin, tableau de bord admin).
 
 Aucune de ces valeurs n'a besoin d'être partagée en dehors du dashboard
 Vercel.

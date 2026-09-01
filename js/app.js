@@ -42,6 +42,8 @@
   // ---------- Elements ----------
   const screens = {
     welcome: document.getElementById("screen-welcome"),
+    login: document.getElementById("screen-login"),
+    account: document.getElementById("screen-account"),
     quiz: document.getElementById("screen-quiz"),
     results: document.getElementById("screen-results"),
   };
@@ -91,6 +93,32 @@
   const historyCard = document.getElementById("history-card");
   const historyTbody = document.getElementById("history-tbody");
   const historyViewing = document.getElementById("history-viewing");
+  const backToAccountBtn = document.getElementById("back-to-account-btn");
+
+  // Connexion participant
+  const accountEntryBtn = document.getElementById("account-entry");
+  const accountLogoutBtn = document.getElementById("account-logout");
+  const goLoginBtn = document.getElementById("go-login-btn");
+  const loginBackBtn = document.getElementById("login-back-btn");
+  const requestCodeForm = document.getElementById("request-code-form");
+  const verifyCodeForm = document.getElementById("verify-code-form");
+  const loginEmailInput = document.getElementById("login-email");
+  const loginCodeInput = document.getElementById("login-code");
+  const codeSentNote = document.getElementById("code-sent-note");
+  const resendCodeBtn = document.getElementById("resend-code-btn");
+  const loginError = document.getElementById("login-error");
+
+  // Espace participant
+  const accountTitle = document.getElementById("account-title");
+  const accountSubtitle = document.getElementById("account-subtitle");
+  const accountStats = document.getElementById("account-stats");
+  const accountNewTestBtn = document.getElementById("account-new-test");
+  const accountLastReportBtn = document.getElementById("account-last-report");
+  const accountEvolutionCard = document.getElementById("account-evolution-card");
+  const accountRangeButtons = document.getElementById("account-range-buttons");
+  const accountEvolutionChart = document.getElementById("account-evolution-chart");
+  const accountEvolutionLegend = document.getElementById("account-evolution-legend");
+  const accountHistoryTbody = document.getElementById("account-history-tbody");
 
   // ---------- Persistence ----------
   function saveState() {
@@ -159,6 +187,7 @@
       el.classList.toggle("active", active);
       el.setAttribute("aria-hidden", String(!active));
     });
+    refreshAppBar(name);
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
@@ -338,6 +367,7 @@
     progressFill.style.width = "100%";
     progressLabel.textContent = "Enregistrement des réponses…";
     await submitAttempt();
+    refreshSessionHistory();
     renderResults();
     showScreen("results");
   }
@@ -684,6 +714,11 @@
   printBtn.addEventListener("click", () => window.print());
 
   restartBtn.addEventListener("click", () => {
+    // Connecté : inutile de resaisir le profil, il est déjà en base.
+    if (session) {
+      startNewTestFromSession();
+      return;
+    }
     clearState();
     state = emptyState();
     startForm.reset();
@@ -692,7 +727,330 @@
     showScreen("welcome");
   });
 
+  backToAccountBtn.addEventListener("click", () => enterAccount());
+
+  // ============================================================
+  // Connexion du participant et espace personnel
+  // ============================================================
+  //
+  // L'identité repose sur un code à usage unique reçu par e-mail : c'est
+  // la possession de la boîte mail qui ouvre l'accès. Aucun écran ne
+  // permet d'obtenir l'historique de quelqu'un à partir d'un simple
+  // identifiant deviné.
+
+  let session = null; // { participant, history }
+
+  function showLoginError(message) {
+    loginError.textContent = message;
+    loginError.hidden = false;
+  }
+
+  function resetLoginForms() {
+    loginError.hidden = true;
+    verifyCodeForm.hidden = true;
+    requestCodeForm.hidden = false;
+    loginCodeInput.value = "";
+  }
+
+  goLoginBtn.addEventListener("click", () => {
+    resetLoginForms();
+    showScreen("login");
+  });
+
+  loginBackBtn.addEventListener("click", () => showScreen("welcome"));
+  resendCodeBtn.addEventListener("click", resetLoginForms);
+
+  requestCodeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const email = loginEmailInput.value.trim();
+    const submitBtn = requestCodeForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Envoi en cours…";
+
+    try {
+      const res = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showLoginError(data.error || "Envoi impossible pour le moment.");
+        return;
+      }
+      // Message volontairement identique que l'adresse soit connue ou
+      // non : le serveur ne dit pas qui a déjà passé le test, l'écran ne
+      // doit pas le dire non plus.
+      codeSentNote.textContent =
+        `Si un test a déjà été passé avec ${email}, un code à 6 chiffres ` +
+        `vient d'y être envoyé. Il est valable 10 minutes.`;
+      requestCodeForm.hidden = true;
+      verifyCodeForm.hidden = false;
+      loginCodeInput.focus();
+    } catch (err) {
+      showLoginError("Erreur réseau. Réessayer dans un instant.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Recevoir mon code";
+    }
+  });
+
+  verifyCodeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const submitBtn = verifyCodeForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginEmailInput.value.trim(),
+          code: loginCodeInput.value.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showLoginError(data.error || "Code incorrect ou expiré.");
+        return;
+      }
+      const loaded = await loadSession();
+      if (loaded) {
+        enterAccount();
+      } else {
+        showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+      }
+    } catch (err) {
+      showLoginError("Erreur réseau. Réessayer dans un instant.");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  accountLogoutBtn.addEventListener("click", async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    session = null;
+    state = emptyState();
+    clearState();
+    startForm.reset();
+    applyGenderTheme("");
+    resetLoginForms();
+    loginEmailInput.value = "";
+    showScreen("welcome");
+  });
+
+  accountEntryBtn.addEventListener("click", () => enterAccount());
+
+  // Récupère le dossier du participant connecté. Renvoie false si aucune
+  // session valide n'est en cours — c'est le cas normal d'un visiteur.
+  async function loadSession() {
+    try {
+      const res = await fetch("/api/me");
+      if (!res.ok) {
+        session = null;
+        return false;
+      }
+      const data = await res.json();
+      if (!data || !data.participant) {
+        session = null;
+        return false;
+      }
+      session = { participant: data.participant, history: data.history || [] };
+      return true;
+    } catch (e) {
+      session = null;
+      return false;
+    }
+  }
+
+  // Recharge `state` à partir du dossier en base, pour que tout le rendu
+  // déjà écrit (bulletin, évolution, historique) fonctionne à l'identique
+  // qu'on vienne de passer le test ou qu'on consulte son espace.
+  function hydrateStateFromSession() {
+    const p = session.participant;
+    const history = session.history || [];
+    const latest = history[history.length - 1];
+    state = {
+      ...emptyState(),
+      gender: p.gender || "",
+      firstName: p.first_name || "",
+      lastName: p.last_name || "",
+      email: p.email || "",
+      phone: p.phone || "",
+      city: p.city || "",
+      postalCode: p.postal_code || "",
+      history,
+      attemptNumber: latest ? latest.attempt_number : null,
+    };
+    applyGenderTheme(state.gender);
+  }
+
+  function enterAccount() {
+    if (!session) {
+      showScreen("welcome");
+      return;
+    }
+    hydrateStateFromSession();
+    renderAccount();
+    showScreen("account");
+  }
+
+  function renderAccount() {
+    const p = session.participant;
+    const history = session.history || [];
+    const latest = history[history.length - 1];
+
+    accountTitle.textContent = p.first_name
+      ? `Espace de ${p.first_name}`
+      : "Mon espace";
+    accountSubtitle.textContent = latest
+      ? `Dernier test le ${formatDate(new Date(latest.taken_at))}.`
+      : "Aucun test enregistré pour le moment.";
+
+    const dominant = latest ? dominantNamesOf(latest) : "—";
+    accountStats.innerHTML = `
+      <div class="account-stat"><span class="num">${history.length}</span><span class="label">test${history.length > 1 ? "s" : ""} passé${history.length > 1 ? "s" : ""}</span></div>
+      <div class="account-stat"><span class="num">${latest ? latest.attempt_number : "—"}</span><span class="label">dernier numéro</span></div>
+      <div class="account-stat"><span class="num small">${escapeText(dominant)}</span><span class="label">blessure dominante</span></div>
+    `;
+
+    accountLastReportBtn.hidden = !latest;
+    renderAccountEvolution();
+    renderAccountHistory();
+  }
+
+  // Nom de la ou des blessures dominantes d'une passation stockée.
+  function dominantNamesOf(attempt) {
+    const ranked = resultsFromAttempt(attempt).sort((a, b) => b.score - a.score);
+    const top = ranked[0].score;
+    return ranked
+      .filter((r) => r.score === top)
+      .map((r) => r.wound.name)
+      .join(" - ");
+  }
+
+  function escapeText(str) {
+    return String(str || "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[c]));
+  }
+
+  let accountRange = "all";
+
+  function renderAccountEvolution() {
+    const history = session.history || [];
+    if (history.length < 2) {
+      accountEvolutionCard.hidden = true;
+      return;
+    }
+    accountEvolutionCard.hidden = false;
+
+    const filtered = filterAttemptsByRange(history, accountRange);
+    accountEvolutionLegend.innerHTML = buildEvolutionLegendHtml(filtered);
+    accountEvolutionChart.innerHTML = filtered.length
+      ? buildEvolutionChartSvg(filtered)
+      : `<p class="evolution-empty">Aucun test passé sur cette période.</p>`;
+  }
+
+  accountRangeButtons.addEventListener("click", (e) => {
+    const btn = e.target.closest(".range-btn");
+    if (!btn) return;
+    accountRange = btn.dataset.range;
+    [...accountRangeButtons.children].forEach((b) => {
+      b.classList.toggle("active", b.dataset.range === accountRange);
+    });
+    renderAccountEvolution();
+  });
+
+  function renderAccountHistory() {
+    const history = session.history || [];
+    accountHistoryTbody.innerHTML = "";
+
+    [...history].reverse().forEach((attempt) => {
+      const ranked = resultsFromAttempt(attempt).sort((a, b) => b.score - a.score);
+      const tr = document.createElement("tr");
+      tr.className = "history-row";
+      tr.dataset.attemptNumber = String(attempt.attempt_number);
+      tr.innerHTML = `
+        <td>${attempt.attempt_number}</td>
+        <td>${formatDate(new Date(attempt.taken_at))}</td>
+        <td>${escapeText(dominantNamesOf(attempt))}</td>
+        <td>${ranked[0].score} / 50</td>
+      `;
+      tr.addEventListener("click", () => openReport(attempt));
+      accountHistoryTbody.appendChild(tr);
+    });
+
+    if (history.length === 0) {
+      accountHistoryTbody.innerHTML =
+        `<tr><td colspan="4" class="empty-state">Aucun test enregistré.</td></tr>`;
+    }
+  }
+
+  function openReport(attempt) {
+    hydrateStateFromSession();
+    renderResults(attempt);
+    showScreen("results");
+  }
+
+  accountLastReportBtn.addEventListener("click", () => {
+    const history = session.history || [];
+    const latest = history[history.length - 1];
+    if (latest) openReport(latest);
+  });
+
+  accountNewTestBtn.addEventListener("click", startNewTestFromSession);
+
+  // Repasser le test sans reremplir le formulaire : le profil vient du
+  // dossier en base, seules les 50 réponses sont à redonner.
+  function startNewTestFromSession() {
+    hydrateStateFromSession();
+    state.answers = new Array(TOTAL).fill(null);
+    state.currentIndex = 0;
+    state.attemptNumber = null;
+    confettiFired = false;
+    saveState();
+    startQuizFromCurrent();
+  }
+
+  // Après une nouvelle passation réussie, le dossier local doit refléter
+  // ce qui vient d'être enregistré côté serveur.
+  function refreshSessionHistory() {
+    if (session && Array.isArray(state.history)) {
+      session.history = state.history;
+    }
+  }
+
+  // ---------- Barre d'application ----------
+  // Les entrées liées au compte disparaissent pendant le quiz : y toucher
+  // en pleine passation ferait perdre les réponses en cours.
+  function refreshAppBar(screenName) {
+    const inQuiz = screenName === "quiz";
+    accountEntryBtn.hidden = !session || inQuiz || screenName === "account";
+    accountLogoutBtn.hidden = !session || inQuiz;
+    backToAccountBtn.hidden = !session || screenName !== "results";
+  }
+
   // ---------- Init ----------
-  initWelcome();
-  showScreen("welcome");
+  (async function init() {
+    initWelcome();
+    const saved = loadState();
+    const inProgress =
+      saved && answeredCount(saved.answers) > 0 && answeredCount(saved.answers) < TOTAL;
+
+    const loggedIn = await loadSession();
+    // Une passation inachevée prime : la reprendre est plus urgent que
+    // d'afficher l'espace personnel, et le bandeau de reprise est déjà là.
+    if (loggedIn && !inProgress) {
+      enterAccount();
+    } else {
+      showScreen("welcome");
+    }
+  })();
 })();

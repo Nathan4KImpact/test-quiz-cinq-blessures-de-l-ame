@@ -919,6 +919,92 @@ input[type="tel"]:focus {
   text-align: center;
 }
 
+/* ---------- Connexion et espace participant ---------- */
+
+.welcome-login-hint {
+  text-align: center;
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.login-card {
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.login-card form {
+  text-align: left;
+}
+
+.login-card .intro {
+  text-align: left;
+}
+
+/* Le code se lit chiffre par chiffre : chasse fixe et lettres espacées. */
+.code-input {
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  font-size: 1.5rem;
+  letter-spacing: 0.4em;
+  text-align: center;
+}
+
+.form-error {
+  color: #b0223a;
+  background: #fdeaee;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.account-header {
+  text-align: center;
+}
+
+.account-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.account-stat .num {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--rose-dark);
+  line-height: 1.2;
+}
+
+/* Un nom de blessure ne tient pas à la taille d'un compteur. */
+.account-stat .num.small {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 8px 0;
+}
+
+.account-stat .label {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.account-actions .btn {
+  flex: 1 1 200px;
+  margin: 0;
+}
+
 /* ---------- Bandeau de félicitations ---------- */
 
 .progress-card {

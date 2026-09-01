@@ -46,8 +46,15 @@ quelle passation, import/export CSV, impression PDF, suppression.
   analyse comparative : vraie base SQL, RLS natif, hébergement UE
   possible, quotas gratuits confortables, données portables.
 - **Auth admin = mot de passe + cookie HttpOnly signé HMAC**.
-  Volontairement minimaliste : un seul admin, pas d'utilisateurs
-  finaux à gérer côté auth.
+  Volontairement minimaliste : un seul admin.
+- **Auth participant = code à 6 chiffres envoyé par e-mail**, puis
+  cookie participant signé (rôle distinct de l'admin, 7 jours).
+  Choisi *contre* une simple recherche par téléphone ou e-mail : sans
+  preuve de possession, l'endpoint deviendrait un moyen de lire le
+  suivi psychologique de n'importe qui à partir d'un identifiant
+  deviné. Le code est stocké en HMAC (jamais en clair), expire en
+  10 min, vaut pour un seul usage, tolère 5 essais, et le nombre
+  d'envois est plafonné par personne.
 
 ### Modèle de données
 
@@ -74,19 +81,26 @@ et `sql/migrations/*.sql`.
 ### Arborescence
 
 ```
-index.html               Écrans public : accueil, quiz, résultats
+index.html               Écrans public : accueil, connexion, espace, quiz, résultats
 admin.html                Tableau de bord admin
-css/style.css             Styles publics (thème rose Leaman + bleu Kanegnon via CSS vars)
+css/style.css             Structure + thème « classique » (rose/bleu selon le genre)
+css/themes.css            Thème « signature » (surfaces translucides) + sélecteur
 css/admin.css             Styles admin
 js/data.js                Contenu du test : 50 questions + fiches des 5 blessures + genderize()
+js/theme.js               Choix et mémorisation du jeu de thèmes
 js/evolution-chart.js     Graphique d'évolution + légende, partagé public/admin
 js/progress.js            Détection des progrès entre passations (bandeau de félicitations)
 js/confetti.js            Confetti canvas maison, sans dépendance
-js/app.js                 Logique publique (état, scoring local, submit, rendu)
+js/app.js                 Logique publique (état, scoring local, submit, rendu, espace participant)
 js/admin.js               Logique admin
 sql/schema.sql             Schéma pour installation neuve
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
 api/submit.js              Enregistre une passation (validation + upsert par téléphone)
+api/me.js                  Dossier du participant connecté (profil + historique)
+api/auth/request-code.js   Envoie un code à 6 chiffres par e-mail
+api/auth/verify-code.js    Vérifie le code, ouvre la session participant
+api/auth/logout.js         Déconnexion participant
+api/_lib/mailer.js         Envoi Resend minimaliste
 api/admin/login.js         Auth admin (compare le mot de passe, pose le cookie)
 api/admin/logout.js        Efface le cookie
 api/admin/participants.js  Liste + dernier résultat de chaque participant
@@ -107,7 +121,7 @@ vercel.json                cleanUrls + définition du cron
 | `ADMIN_PASSWORD` | ✅ | Mot de passe pour `/admin.html` |
 | `SESSION_SECRET` | ✅ | Chaîne aléatoire pour signer le cookie admin (ex. `openssl rand -hex 32`) |
 | `CRON_SECRET` | si cron | Vercel l'injecte automatiquement à la tâche planifiée |
-| `RESEND_API_KEY` | optionnel | Active les rappels e-mail à 6 mois |
+| `RESEND_API_KEY` | si connexion participant | Codes de connexion + rappels e-mail à 6 mois |
 | `REMINDER_FROM_EMAIL` | optionnel | Adresse d'expédition des rappels |
 | `APP_URL` | optionnel | URL publique, utilisée dans le lien du mail de rappel |
 
@@ -130,6 +144,21 @@ redéploiement.
   exactement ce qui a produit chaque évolution ; roll-back facile.
 - **README avec table de variables d'env, chemin de migration et
   bouton « Deploy with Vercel »** — accélère toute reprise.
+
+### Spécificité CSS : les thèmes cassent les états, silencieusement
+
+**Symptôme** : dans le thème signature, le bouton de période actif
+apparaissait blanc sur blanc, et la réponse sélectionnée gardait son
+texte blanc sur un fond pâle.
+**Cause** : `html[data-theme="x"] .classe` pèse (0,2,1) et passe donc
+devant les états écrits `.classe.active` (0,2,0) dans style.css. Le
+thème écrasait le fond sans toucher à la couleur du texte.
+**Règle** : un thème qui redéfinit une surface **doit redonner
+explicitement chaque état actif** (`.active`, `.selected`,
+`:has(input:checked)`, `[data-dominant]`) à une spécificité supérieure.
+**Détection** : un test Playwright qui mesure le **ratio de contraste
+calculé** entre `color` et `backgroundColor` — un test fonctionnel
+passe très bien sur un bouton invisible.
 
 ### Confidentialité et sécurité par construction
 
