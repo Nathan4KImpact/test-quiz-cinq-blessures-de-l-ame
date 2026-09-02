@@ -120,11 +120,7 @@
   const accountStats = document.getElementById("account-stats");
   const accountNewTestBtn = document.getElementById("account-new-test");
   const accountLastReportBtn = document.getElementById("account-last-report");
-  const accountEvolutionCard = document.getElementById("account-evolution-card");
-  const accountRangeButtons = document.getElementById("account-range-buttons");
-  const accountEvolutionChart = document.getElementById("account-evolution-chart");
-  const accountEvolutionLegend = document.getElementById("account-evolution-legend");
-  const accountHistoryTbody = document.getElementById("account-history-tbody");
+  const accountActionsNote = document.getElementById("account-actions-note");
   const accountPasswordCard = document.getElementById("account-password-card");
   const accountPasswordTitle = document.getElementById("account-password-title");
   const accountPasswordNote = document.getElementById("account-password-note");
@@ -597,6 +593,10 @@
 
       const tr = document.createElement("tr");
       tr.className = "history-row" + (isCurrent ? " current" : "");
+      // Ancre stable sur le numéro de passation, comme le tableau admin :
+      // désigner une ligne par son texte est ambigu (une date contient le
+      // numéro d'une autre ligne).
+      tr.dataset.attemptNumber = String(attempt.attempt_number);
       tr.innerHTML = `
         <td>${attempt.attempt_number}</td>
         <td>${formatDate(new Date(attempt.taken_at))}</td>
@@ -991,9 +991,8 @@
     `;
 
     accountLastReportBtn.hidden = !latest;
+    accountActionsNote.hidden = !latest;
     renderPasswordCard();
-    renderAccountEvolution();
-    renderAccountHistory();
   }
 
   // Un dossier ancien n'a pas encore de mot de passe : la carte invite
@@ -1073,58 +1072,11 @@
     }[c]));
   }
 
-  let accountRange = "all";
-
-  function renderAccountEvolution() {
-    const history = session.history || [];
-    if (history.length < 2) {
-      accountEvolutionCard.hidden = true;
-      return;
-    }
-    accountEvolutionCard.hidden = false;
-
-    const filtered = filterAttemptsByRange(history, accountRange);
-    accountEvolutionLegend.innerHTML = buildEvolutionLegendHtml(filtered);
-    accountEvolutionChart.innerHTML = filtered.length
-      ? buildEvolutionChartSvg(filtered)
-      : `<p class="evolution-empty">Aucun test passé sur cette période.</p>`;
-  }
-
-  accountRangeButtons.addEventListener("click", (e) => {
-    const btn = e.target.closest(".range-btn");
-    if (!btn) return;
-    accountRange = btn.dataset.range;
-    [...accountRangeButtons.children].forEach((b) => {
-      b.classList.toggle("active", b.dataset.range === accountRange);
-    });
-    renderAccountEvolution();
-  });
-
-  function renderAccountHistory() {
-    const history = session.history || [];
-    accountHistoryTbody.innerHTML = "";
-
-    [...history].reverse().forEach((attempt) => {
-      const ranked = resultsFromAttempt(attempt).sort((a, b) => b.score - a.score);
-      const tr = document.createElement("tr");
-      tr.className = "history-row";
-      tr.dataset.attemptNumber = String(attempt.attempt_number);
-      tr.innerHTML = `
-        <td>${attempt.attempt_number}</td>
-        <td>${formatDate(new Date(attempt.taken_at))}</td>
-        <td>${escapeText(dominantNamesOf(attempt))}</td>
-        <td>${ranked[0].score} / 50</td>
-      `;
-      tr.addEventListener("click", () => openReport(attempt));
-      accountHistoryTbody.appendChild(tr);
-    });
-
-    if (history.length === 0) {
-      accountHistoryTbody.innerHTML =
-        `<tr><td colspan="4" class="empty-state">Aucun test enregistré.</td></tr>`;
-    }
-  }
-
+  // Le graphique d'évolution et le tableau des tests passés ne sont pas
+  // repris ici : le bulletin les porte déjà, et les dupliquer donnait à
+  // cet écran deux lectures du même contenu. L'espace se limite donc à
+  // ce qui s'y décide — refaire le test, ouvrir le bulletin, gérer son
+  // mot de passe.
   function openReport(attempt) {
     hydrateStateFromSession();
     renderResults(attempt);
