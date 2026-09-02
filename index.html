@@ -15,11 +15,9 @@
     if (t === "classique" || t === "signature") document.documentElement.dataset.theme = t;
   } catch (e) {}
 </script>
-<!-- Poppins : la sans-serif géométrique arrondie du site de l'association.
-     La pile de repli couvre le cas d'un chargement bloqué ou hors ligne. -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" />
+<!-- Poppins, la police du site de l'association, servie depuis ce dépôt :
+     aucune requête ne part vers un tiers au chargement de la page. -->
+<link rel="stylesheet" href="css/fonts.css" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/themes.css" />
 </head>

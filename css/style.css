@@ -1000,6 +1000,13 @@ input[type="tel"]:focus {
   gap: 10px;
 }
 
+/* .section-note porte une marge haute négative, faite pour la rapprocher
+   d'un titre. Sous une rangée de boutons, elle la collait dessus : on la
+   remplace par un écart franc. */
+.account-actions-note {
+  margin: 16px 0 0;
+}
+
 /* Dossier sans mot de passe : la carte se signale d'elle-même, c'est la
    seule action réellement à faire en arrivant par un code e-mail. */
 #account-password-card.highlight {

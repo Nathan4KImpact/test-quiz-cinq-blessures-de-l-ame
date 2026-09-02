@@ -92,6 +92,7 @@ index.html               Écrans public : accueil, connexion, espace, quiz, rés
 admin.html                Tableau de bord admin
 css/style.css             Structure + thème « classique » (rose/bleu selon le genre)
 css/themes.css            Thème « signature » (charte Vie Florissante) + sélecteur
+css/fonts.css             @font-face de Poppins (fichiers dans fonts/, pas de CDN)
 css/admin.css             Styles admin
 js/data.js                Contenu du test : 50 questions + fiches des 5 blessures + genderize()
 js/theme.js               Choix et mémorisation du jeu de thèmes
@@ -198,6 +199,22 @@ l'aurait laissé en clair sur l'appareil — souvent partagé — longtemps
 après la fin du test. Il vit donc dans une variable de module
 (`pendingPassword`), effacée dès l'envoi. Un test relit `localStorage`
 après la passation pour vérifier que le mot de passe ne s'y trouve pas.
+
+### Une police de CDN est une fuite de données, pas un détail technique
+
+Charger Poppins depuis `fonts.googleapis.com` envoie l'adresse IP de
+chaque visiteur à Google, ce que la justice européenne a jugé contraire
+au RGPD en l'absence de consentement — pour une association française qui
+recueille du suivi psychologique, c'est disqualifiant.
+**Correctif** : les six `.woff2` (3 graisses × latin et latin-ext) vivent
+dans `fonts/`, déclarés par `css/fonts.css`. 39 Ko au total, et
+`unicode-range` laisse le navigateur ne prendre que ce dont la page a
+besoin — en pratique le seul `latin`, soit 23 Ko.
+**Au passage** : le devanagari livré par défaut par Google était inutile
+ici, un tiers du poids économisé sans rien perdre.
+**Test associé** : un test compte les requêtes sortantes au chargement
+des deux pages et échoue s'il en part une seule vers un autre domaine.
+Vérifier « la police s'affiche » ne dit rien sur d'où elle vient.
 
 ### Confidentialité et sécurité par construction
 
