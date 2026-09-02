@@ -36,6 +36,9 @@
       // Passations précédentes de cette personne, renvoyées par /api/submit
       // pour alimenter le graphique d'évolution et l'historique.
       history: [],
+      // Passe à true si /api/submit n'a pas répondu : l'écran de résultats
+      // affiche alors un avertissement au lieu de laisser croire au succès.
+      saveFailed: false,
     };
   }
 
@@ -75,6 +78,7 @@
   const prevBtn = document.getElementById("prev-btn");
 
   const progressCard = document.getElementById("progress-card");
+  const saveWarning = document.getElementById("save-warning");
   const attemptMeta = document.getElementById("attempt-meta");
   const dominantName = document.getElementById("dominant-name");
   const dominantMask = document.getElementById("dominant-mask");
@@ -422,6 +426,7 @@
       window.clearTimeout(timeout);
       const data = await res.json().catch(() => null);
       if (res.ok) {
+        state.saveFailed = false;
         if (data && typeof data.attemptNumber === "number") {
           state.attemptNumber = data.attemptNumber;
         }
@@ -429,11 +434,15 @@
           state.history = data.history;
         }
       } else {
+        state.saveFailed = true;
         console.warn("Échec de l'enregistrement de la passation :", res.status, data);
       }
     } catch (e) {
       // Hors-ligne ou serveur indisponible : on affiche quand même les résultats
-      // calculés localement, sans numéro de passation.
+      // calculés localement, sans numéro de passation — mais on le dit, sinon
+      // la personne croit son test conservé alors qu'il est perdu.
+      state.saveFailed = true;
+      console.warn("Enregistrement de la passation impossible :", e);
     }
     // Le mot de passe a fini son voyage : on ne le garde pas en mémoire.
     pendingPassword = "";
@@ -493,6 +502,10 @@
     resultsTitle.textContent = state.firstName
       ? `Résultats de ${state.firstName}`
       : "Résultats du test";
+
+    // Un rapport rejoué vient forcément de la base : l'avertissement ne
+    // concerne que la passation qui vient d'être envoyée.
+    saveWarning.hidden = isPast || !state.saveFailed;
 
     const attemptNumber = isPast ? attempt.attempt_number : state.attemptNumber;
     const attemptDate = isPast ? new Date(attempt.taken_at) : new Date();

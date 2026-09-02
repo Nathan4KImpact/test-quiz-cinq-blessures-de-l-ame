@@ -161,6 +161,30 @@ Ou manuellement :
 
 Le tableau de bord admin est accessible sur `<ton-domaine>/admin.html`.
 
+### 4. Mise en pause automatique de Supabase (plan gratuit)
+
+Un projet Supabase du plan gratuit est **mis en pause après 7 jours sans
+activité**. Une fois en pause, l'application continue de s'afficher et de
+calculer les résultats, mais plus rien ne s'enregistre : le participant
+voit alors un bandeau « Résultats non enregistrés » sur son bulletin.
+Réactiver le projet se fait en un clic depuis le dashboard Supabase.
+
+La tâche planifiée `api/cron/reminders.js` interroge la base **à chaque
+exécution**, y compris quand `RESEND_API_KEY` n'est pas configuré et
+qu'aucun e-mail n'est à envoyer. Avec le cron quotidien déclaré dans
+`vercel.json`, le compteur d'inactivité ne peut donc pas atteindre
+7 jours. Deux conditions pour que ce garde-fou tienne :
+
+- `CRON_SECRET` doit être défini dans le projet Vercel (le cron répond
+  401 sans lui, et Supabase n'est jamais touché) ;
+- le projet Vercel doit rester déployé — un projet supprimé ou mis en
+  pause n'exécute plus rien.
+
+Pour une garantie totale (association qui livre le produit et ne veut
+plus s'en occuper), le plan Supabase Pro supprime purement et simplement
+la mise en pause. En attendant, l'export CSV du tableau de bord admin
+sert de sauvegarde froide.
+
 ## Lancer le projet en local
 
 Le front est statique, il suffit de le servir :

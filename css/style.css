@@ -1083,6 +1083,37 @@ input[type="tel"]:focus {
   margin: 0;
 }
 
+/* ---------- Avertissement d'enregistrement ---------- */
+/* Couleurs volontairement indépendantes du genre et du thème : une alerte
+   doit rester une alerte. La déclinaison « signature » est redonnée dans
+   themes.css, sans quoi le fond de .card du thème (spécificité supérieure)
+   reprendrait le dessus. */
+
+.card.save-warning {
+  background: #fdf1e7;
+  border: 1.5px solid #e0955a;
+  border-left-width: 5px;
+  color: #6d3b12;
+}
+
+.save-warning h2 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #a2521a;
+}
+
+.save-warning p {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.save-warning p:last-child {
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
 /* ---------- Bandeau de félicitations ---------- */
 
 .progress-card {

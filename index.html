@@ -275,6 +275,20 @@
            par rapport à une passation antérieure. -->
       <section id="progress-card" class="card progress-card" role="status" hidden></section>
 
+      <!-- Visible seulement si l'enregistrement de la passation a échoué :
+           les résultats ci-dessous restent justes, mais ils ne rejoindront
+           pas l'historique tant que le test n'est pas repassé. -->
+      <section id="save-warning" class="card save-warning" role="alert" hidden>
+        <h2>Résultats non enregistrés</h2>
+        <p>
+          Ces résultats n'ont pas pu être enregistrés (connexion interrompue ou
+          service momentanément indisponible). Ils s'affichent correctement,
+          mais ils n'apparaîtront pas dans l'historique ni dans le graphique
+          d'évolution.
+        </p>
+        <p>Imprimez ou photographiez cette page, puis repassez le test plus tard pour le conserver.</p>
+      </section>
+
       <div class="card results-header">
         <p class="dove" aria-hidden="true">🕊️</p>
         <h1 id="results-title">Résultats du test</h1>

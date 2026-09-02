@@ -291,6 +291,15 @@ html[data-theme="signature"] .progress-card {
   border-left: 3px solid var(--vf-green);
 }
 
+/* Le thème redéfinit le fond de .card à une spécificité (0,2,1) qui passerait
+   devant .card.save-warning (0,2,0) : on redonne l'alerte explicitement. */
+html[data-theme="signature"] .card.save-warning {
+  background: #fdf1e7;
+  border: 1.5px solid #e0955a;
+  border-left-width: 5px;
+  color: #6d3b12;
+}
+
 html[data-theme="signature"] .chart-track {
   background: rgba(42, 59, 48, 0.07);
 }
