@@ -21,8 +21,22 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // Ping systématique de la base, AVANT toute sortie anticipée. Supabase met
+  // en pause un projet gratuit resté sans activité (7 jours) ; sans cette
+  // requête, une instance où RESEND_API_KEY n'est pas configuré ne toucherait
+  // jamais la base et finirait par se mettre en pause toute seule.
+  let keepAlive = "ok";
+  try {
+    await supabaseRequest("/participants?select=id&limit=1");
+  } catch (err) {
+    keepAlive = "échec";
+    console.error("cron/reminders keep-alive error", err);
+  }
+
   if (!isMailerConfigured()) {
-    res.status(200).json({ skipped: true, reason: "RESEND_API_KEY non configuré." });
+    res
+      .status(200)
+      .json({ skipped: true, keepAlive, reason: "RESEND_API_KEY non configuré." });
     return;
   }
 

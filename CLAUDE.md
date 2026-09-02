@@ -322,6 +322,37 @@ avant de s'appuyer dessus.
 **Garde-fou** : un test compte les fichiers de `api/` hors préfixe `_` et
 échoue au-delà de 12. Sans lui, on ne s'en aperçoit qu'au déploiement.
 
+### Un cron qui sort trop tôt ne réveille pas la base
+
+**Symptôme** : e-mail Supabase « projet inactif, mise en pause dans
+X jours », alors qu'un cron quotidien tourne depuis le début.
+**Cause** : `api/cron/reminders.js` renvoyait `{ skipped: true }` **avant**
+tout appel à `supabaseRequest` quand `RESEND_API_KEY` n'était pas
+configuré. Le cron s'exécutait bien tous les jours — sans jamais toucher
+Postgres. Le plan gratuit compte 7 jours d'inactivité *de la base*, pas de
+l'application.
+**Correctif** : un ping `/participants?select=id&limit=1` placé **avant**
+la sortie anticipée, dans son propre `try` pour qu'une base injoignable ne
+transforme pas le cron en 500. Sa réussite est rapportée dans la réponse
+(`keepAlive`), visible dans les logs Vercel.
+**Règle** : quand un effet de bord (ici : garder la base éveillée) est
+attendu à chaque exécution, il doit précéder **toutes** les sorties
+anticipées, pas se cacher derrière une condition de configuration.
+**Limite** : ce ping repousse la pause, il ne la supprime pas. Seul le plan
+Pro garantit l'absence de mise en pause.
+
+### Un échec d'enregistrement silencieux est une perte de données
+
+**Symptôme potentiel** : base en pause ou fonction en erreur → la personne
+répond aux 50 questions, voit son bulletin (calculé en local), et repart en
+pensant son test conservé. Il ne l'est pas.
+**Cause** : `submitAttempt()` se contentait d'un `console.warn` sur un
+échec, précisément pour ne pas gâcher l'affichage des résultats.
+**Correctif** : drapeau `state.saveFailed` et bandeau `#save-warning` en
+tête de l'écran de résultats — les résultats restent affichés, mais on dit
+qu'ils ne rejoindront pas l'historique.
+**Règle** : dégrader gracieusement, oui ; le faire sans le dire, non.
+
 ### Envs Vercel « Shared » vs projet
 
 **Symptôme** : `ADMIN_PASSWORD n'est pas configuré côté serveur`
