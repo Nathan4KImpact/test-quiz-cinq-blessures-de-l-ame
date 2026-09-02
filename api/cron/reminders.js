@@ -6,6 +6,7 @@
 // l'application fonctionne normalement sans elle.
 
 const { supabaseRequest } = require("../_lib/supabase");
+const { isMailerConfigured, sendEmail, escapeHtml } = require("../_lib/mailer");
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 3600 * 1000;
 
@@ -20,13 +21,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
+  if (!isMailerConfigured()) {
     res.status(200).json({ skipped: true, reason: "RESEND_API_KEY non configuré." });
     return;
   }
 
-  const fromAddress = process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev";
   const appUrl = process.env.APP_URL || "";
 
   try {
@@ -37,7 +36,7 @@ module.exports = async (req, res) => {
 
     let sent = 0;
     for (const participant of due || []) {
-      const ok = await sendReminderEmail(resendKey, fromAddress, appUrl, participant);
+      const ok = await sendReminderEmail(appUrl, participant);
       if (ok) {
         await supabaseRequest(`/participants?id=eq.${participant.id}`, {
           method: "PATCH",
@@ -54,44 +53,22 @@ module.exports = async (req, res) => {
   }
 };
 
-async function sendReminderEmail(apiKey, from, appUrl, participant) {
+// Passe par api/_lib/mailer.js comme les codes de connexion : même
+// expéditeur, même adresse de réponse, mêmes logs de diagnostic.
+async function sendReminderEmail(appUrl, participant) {
   const ctaUrl = appUrl || "";
   const html = `
     <p>Bonjour ${escapeHtml(participant.first_name || "")},</p>
     <p>Cela fait environ 6 mois depuis ta dernière passation du <strong>Test des 5 blessures de l'âme</strong>.</p>
     <p>Refaire le test aujourd'hui te permet de suivre l'évolution de ton cheminement.</p>
-    ${ctaUrl ? `<p><a href="${ctaUrl}">Refaire le test maintenant</a></p>` : ""}
+    ${ctaUrl ? `<p><a href="${escapeHtml(ctaUrl)}">Refaire le test maintenant</a></p>` : ""}
     <p>« Bien-aimée, je souhaite que tu prospères à tous égards et sois en bonne santé,
     comme prospère l'état de ton âme. » (3 Jean 1:2)</p>
   `;
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: participant.email,
-        subject: "Et si tu refaisais le test des 5 blessures de l'âme ?",
-        html,
-      }),
-    });
-    return res.ok;
-  } catch (e) {
-    console.error("sendReminderEmail failed", e);
-    return false;
-  }
-}
-
-function escapeHtml(str) {
-  return String(str || "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  }[c]));
+  return sendEmail({
+    to: participant.email,
+    subject: "Et si tu refaisais le test des 5 blessures de l'âme ?",
+    html,
+  });
 }

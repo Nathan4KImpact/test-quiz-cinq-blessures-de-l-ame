@@ -8,6 +8,11 @@ function mailerConfig() {
   return {
     apiKey: process.env.RESEND_API_KEY || "",
     from: process.env.REMINDER_FROM_EMAIL || "onboarding@resend.dev",
+    // Quand l'expédition se fait depuis un sous-domaine technique
+    // (ex. contact@mail.exemple.org), aucune boîte ne reçoit derrière :
+    // une réponse rebondirait. REPLY_TO_EMAIL redirige les réponses vers
+    // une adresse réellement relevée.
+    replyTo: process.env.REPLY_TO_EMAIL || "",
   };
 }
 
@@ -16,7 +21,7 @@ function isMailerConfigured() {
 }
 
 async function sendEmail({ to, subject, html }) {
-  const { apiKey, from } = mailerConfig();
+  const { apiKey, from, replyTo } = mailerConfig();
   if (!apiKey) return false;
 
   try {
@@ -26,7 +31,13 @@ async function sendEmail({ to, subject, html }) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
+      }),
     });
     if (!res.ok) {
       // Le corps de la réponse Resend explique la cause (domaine non

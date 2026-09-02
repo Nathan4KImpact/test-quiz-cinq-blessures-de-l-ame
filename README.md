@@ -127,7 +127,8 @@ Dans le projet Vercel : **Settings → Environment Variables**, ajouter :
 | `SESSION_SECRET` | oui | Chaîne aléatoire longue ; signe le cookie admin, le cookie participant et les codes de connexion (ex. `openssl rand -hex 32`) |
 | `CRON_SECRET` | oui, si rappels activés | Chaîne aléatoire ; Vercel l'envoie automatiquement à la tâche planifiée pour l'authentifier |
 | `RESEND_API_KEY` | oui, pour la connexion participant | Envoi des codes de connexion à 6 chiffres, et de l'e-mail de rappel à 6 mois (compte gratuit sur [resend.com](https://resend.com)) |
-| `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié — sinon les codes risquent d'arriver en spam) |
+| `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition, forme `Nom <adresse>` acceptée (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié — sinon les codes risquent d'arriver en spam) |
+| `REPLY_TO_EMAIL` | recommandé | Adresse où arrivent les réponses. **Indispensable si l'expédition se fait depuis un sous-domaine technique** (`contact@mail.exemple.org`), derrière lequel aucune boîte ne relève le courrier : sans elle, toute réponse d'un participant rebondit |
 | `APP_URL` | non | URL publique de l'app, utilisée dans le lien du mail de rappel |
 
 ⚠️ **Sans `RESEND_API_KEY`, la connexion par mot de passe fonctionne

@@ -132,7 +132,8 @@ vercel.json                cleanUrls + définition du cron
 | `SESSION_SECRET` | ✅ | Chaîne aléatoire pour signer le cookie admin (ex. `openssl rand -hex 32`) |
 | `CRON_SECRET` | si cron | Vercel l'injecte automatiquement à la tâche planifiée |
 | `RESEND_API_KEY` | si connexion participant | Codes de connexion + rappels e-mail à 6 mois |
-| `REMINDER_FROM_EMAIL` | optionnel | Adresse d'expédition des rappels |
+| `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition (`Nom <adresse>` accepté) |
+| `REPLY_TO_EMAIL` | recommandé | Où arrivent les réponses — obligatoire si on expédie depuis un sous-domaine technique sans boîte |
 | `APP_URL` | optionnel | URL publique, utilisée dans le lien du mail de rappel |
 
 ⚠️ Les variables **doivent** être définies au niveau **du projet
