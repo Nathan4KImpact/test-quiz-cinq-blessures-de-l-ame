@@ -48,11 +48,20 @@ sont stockées dans un projet **Supabase** (Postgres géré).
 ```
 index.html              Écrans public : accueil (profil), quiz, résultats
 admin.html               Tableau de bord admin (login + suivi des participants)
-css/style.css            Styles de l'app publique
+css/style.css            Styles de l'app publique (structure + thème « classique »)
+css/themes.css           Thème « signature » (charte Vie Florissante) + sélecteur
+css/fonts.css            Déclarations @font-face de Poppins
+fonts/                   Fichiers .woff2 de Poppins, servis depuis le dépôt
 css/admin.css            Styles du tableau de bord admin
 js/data.js               Contenu du test : 50 questions + fiches des 5 blessures
-js/app.js                Logique de l'app publique (état, score, soumission, résultats)
+js/theme.js              Choix et mémorisation du jeu de thèmes
+js/app.js                Logique de l'app publique (état, score, soumission, résultats, espace participant)
 js/admin.js              Logique du tableau de bord admin
+api/auth/[action].js      Route unique de l'authentification participant
+api/_auth/                Handlers : login, logout, request-code, verify-code,
+                          set-password, me. Le préfixe « _ » évite que chacun
+                          devienne une fonction serverless (plafond de 12 sur
+                          le plan Hobby) ; les URL restent /api/auth/login…
 sql/schema.sql            Schéma Supabase à exécuter une fois (SQL Editor)
 sql/migrations/           Migrations à jouer dans l'ordre sur une base existante
 sql/seed-demo.sql         Jeu de données fictives, facultatif (démo du suivi)
@@ -87,6 +96,14 @@ fonctions serverless — via une clé secrète côté serveur — peuvent y acc�
        en double (une ligne au format national, une au format
        international). ⚠️ Régler l'indicatif par défaut en tête du
        fichier avant de l'exécuter.
+     - [`004_participant_login_codes.sql`](sql/migrations/004_participant_login_codes.sql)
+       — crée la table des codes de connexion à usage unique et
+       normalise les e-mails existants en minuscules, pour que la
+       connexion des participants retrouve le bon dossier
+     - [`005_participant_password.sql`](sql/migrations/005_participant_password.sql)
+       — ajoute le mot de passe participant (colonnes `password_hash`
+       et `password_set_at`, laissées vides pour les dossiers
+       existants)
 3. Dans **Project Settings → API**, relever :
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
@@ -110,11 +127,23 @@ Dans le projet Vercel : **Settings → Environment Variables**, ajouter :
 | `SUPABASE_URL` | oui | URL du projet Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | oui | Clé `service_role` Supabase (secrète) |
 | `ADMIN_PASSWORD` | oui | Mot de passe pour accéder à `/admin.html` |
-| `SESSION_SECRET` | oui | Chaîne aléatoire longue, sert à signer le cookie admin (ex. générée avec `openssl rand -hex 32`) |
+| `SESSION_SECRET` | oui | Chaîne aléatoire longue ; signe le cookie admin, le cookie participant et les codes de connexion (ex. `openssl rand -hex 32`) |
 | `CRON_SECRET` | oui, si rappels activés | Chaîne aléatoire ; Vercel l'envoie automatiquement à la tâche planifiée pour l'authentifier |
-| `RESEND_API_KEY` | non | Active l'e-mail de rappel à 6 mois (compte gratuit sur [resend.com](https://resend.com)) |
-| `REMINDER_FROM_EMAIL` | non | Adresse d'expédition des rappels (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié) |
+| `RESEND_API_KEY` | oui, pour la connexion participant | Envoi des codes de connexion à 6 chiffres, et de l'e-mail de rappel à 6 mois (compte gratuit sur [resend.com](https://resend.com)) |
+| `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition, forme `Nom <adresse>` acceptée (par défaut `onboarding@resend.dev`, à remplacer par un domaine vérifié — sinon les codes risquent d'arriver en spam) |
+| `REPLY_TO_EMAIL` | recommandé | Adresse où arrivent les réponses. **Indispensable si l'expédition se fait depuis un sous-domaine technique** (`contact@mail.exemple.org`), derrière lequel aucune boîte ne relève le courrier : sans elle, toute réponse d'un participant rebondit |
 | `APP_URL` | non | URL publique de l'app, utilisée dans le lien du mail de rappel |
+
+⚠️ **Sans `RESEND_API_KEY`, la connexion par mot de passe fonctionne
+toujours**, mais les deux chemins qui passent par l'e-mail sont
+indisponibles : « mot de passe oublié » et la première connexion des
+personnes déjà en base (qui n'ont pas encore de mot de passe). L'écran
+affiche alors un message explicite.
+
+Note sur l'adresse d'expédition : `onboarding@resend.dev`, la valeur par
+défaut, ne peut envoyer qu'à l'adresse propriétaire du compte Resend.
+Elle sert à tester ; pour un usage réel, vérifier un domaine chez Resend
+et renseigner `REMINDER_FROM_EMAIL`.
 
 Aucune de ces valeurs n'a besoin d'être partagée en dehors du dashboard
 Vercel.

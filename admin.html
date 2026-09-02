@@ -1,17 +1,32 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="signature">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Admin — Test des 5 blessures de l'âme</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>" />
+<script>
+  try {
+    var t = localStorage.getItem("blessures-ame-theme");
+    if (t === "classique" || t === "signature") document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
+<link rel="stylesheet" href="css/fonts.css" />
 <link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/themes.css" />
 <link rel="stylesheet" href="css/admin.css" />
 </head>
 <body>
 
 <div id="admin-app">
+
+  <div class="app-bar">
+    <div class="theme-switch" role="group" aria-label="Jeu de thèmes">
+      <button type="button" class="theme-btn" data-theme-choice="signature" aria-pressed="true">Vie Florissante</button>
+      <button type="button" class="theme-btn" data-theme-choice="classique" aria-pressed="false">Classique</button>
+    </div>
+  </div>
 
   <!-- ===================== LOGIN ===================== -->
   <section id="admin-login" class="admin-screen active">
@@ -141,6 +156,7 @@
 
 </div>
 
+<script src="js/theme.js"></script>
 <script src="js/data.js"></script>
 <script src="js/evolution-chart.js"></script>
 <script src="js/progress.js"></script>

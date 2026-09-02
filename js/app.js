@@ -42,6 +42,8 @@
   // ---------- Elements ----------
   const screens = {
     welcome: document.getElementById("screen-welcome"),
+    login: document.getElementById("screen-login"),
+    account: document.getElementById("screen-account"),
     quiz: document.getElementById("screen-quiz"),
     results: document.getElementById("screen-results"),
   };
@@ -91,6 +93,43 @@
   const historyCard = document.getElementById("history-card");
   const historyTbody = document.getElementById("history-tbody");
   const historyViewing = document.getElementById("history-viewing");
+  const backToAccountBtn = document.getElementById("back-to-account-btn");
+
+  // Connexion participant
+  const accountEntryBtn = document.getElementById("account-entry");
+  const accountLogoutBtn = document.getElementById("account-logout");
+  const goLoginBtn = document.getElementById("go-login-btn");
+  const loginBackBtn = document.getElementById("login-back-btn");
+  const signupPasswordInput = document.getElementById("signup-password");
+  const passwordLoginForm = document.getElementById("password-login-form");
+  const passwordLoginEmail = document.getElementById("password-login-email");
+  const passwordLoginPassword = document.getElementById("password-login-password");
+  const goCodeBtn = document.getElementById("go-code-btn");
+  const backToPasswordBtn = document.getElementById("back-to-password-btn");
+  const requestCodeForm = document.getElementById("request-code-form");
+  const verifyCodeForm = document.getElementById("verify-code-form");
+  const loginEmailInput = document.getElementById("login-email");
+  const loginCodeInput = document.getElementById("login-code");
+  const codeSentNote = document.getElementById("code-sent-note");
+  const resendCodeBtn = document.getElementById("resend-code-btn");
+  const loginError = document.getElementById("login-error");
+
+  // Espace participant
+  const accountTitle = document.getElementById("account-title");
+  const accountSubtitle = document.getElementById("account-subtitle");
+  const accountStats = document.getElementById("account-stats");
+  const accountNewTestBtn = document.getElementById("account-new-test");
+  const accountLastReportBtn = document.getElementById("account-last-report");
+  const accountActionsNote = document.getElementById("account-actions-note");
+  const accountPasswordCard = document.getElementById("account-password-card");
+  const accountPasswordToggle = document.getElementById("account-password-toggle");
+  const accountPasswordBody = document.getElementById("account-password-body");
+  const accountPasswordTitle = document.getElementById("account-password-title");
+  const accountPasswordNote = document.getElementById("account-password-note");
+  const accountPasswordForm = document.getElementById("account-password-form");
+  const accountPasswordInput = document.getElementById("account-password");
+  const accountPasswordConfirm = document.getElementById("account-password-confirm");
+  const accountPasswordMsg = document.getElementById("account-password-msg");
 
   // ---------- Persistence ----------
   function saveState() {
@@ -138,8 +177,10 @@
 
   function applyGenderTheme(gender) {
     document.body.dataset.gender = gender || "";
-    if (themeColorMeta) {
-      themeColorMeta.setAttribute("content", gender === "homme" ? "#2f6fb0" : "#c2478b");
+    // La couleur d'interface est déduite de l'accent réellement appliqué
+    // (js/theme.js), pour rester juste quel que soit le thème actif.
+    if (themeColorMeta && typeof syncThemeColorMeta === "function") {
+      syncThemeColorMeta();
     }
     const verseText = genderize(verseTemplate, gender);
     if (verseWelcome) verseWelcome.textContent = verseText;
@@ -159,6 +200,7 @@
       el.classList.toggle("active", active);
       el.setAttribute("aria-hidden", String(!active));
     });
+    refreshAppBar(name);
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
 
@@ -238,6 +280,7 @@
       city: cityInput.value.trim(),
       postalCode: postalCodeInput.value.trim(),
     };
+    pendingPassword = signupPasswordInput.value;
     saveState();
     startQuizFromCurrent();
   });
@@ -249,6 +292,12 @@
     showScreen("quiz");
     renderQuestion(state.currentIndex);
   }
+
+  // Mot de passe choisi au formulaire d'accueil. Délibérément gardé hors
+  // de `state` : celui-ci est sérialisé dans localStorage à chaque
+  // réponse, et un mot de passe en clair y resterait sur l'appareil —
+  // partagé ou non — longtemps après la fin du test.
+  let pendingPassword = "";
 
   // ---------- Quiz screen ----------
   let isTransitioning = false;
@@ -338,6 +387,7 @@
     progressFill.style.width = "100%";
     progressLabel.textContent = "Enregistrement des réponses…";
     await submitAttempt();
+    refreshSessionHistory();
     renderResults();
     showScreen("results");
   }
@@ -354,6 +404,10 @@
       postalCode: state.postalCode,
       answers: state.answers,
       consent: true,
+      // Ignoré côté serveur si le téléphone correspond déjà à un dossier :
+      // seul /api/auth/set-password, qui exige une session prouvée, peut
+      // changer le mot de passe d'un dossier existant.
+      password: pendingPassword,
     };
 
     try {
@@ -381,6 +435,9 @@
       // Hors-ligne ou serveur indisponible : on affiche quand même les résultats
       // calculés localement, sans numéro de passation.
     }
+    // Le mot de passe a fini son voyage : on ne le garde pas en mémoire.
+    pendingPassword = "";
+    signupPasswordInput.value = "";
     saveState();
   }
 
@@ -540,6 +597,10 @@
 
       const tr = document.createElement("tr");
       tr.className = "history-row" + (isCurrent ? " current" : "");
+      // Ancre stable sur le numéro de passation, comme le tableau admin :
+      // désigner une ligne par son texte est ambigu (une date contient le
+      // numéro d'une autre ligne).
+      tr.dataset.attemptNumber = String(attempt.attempt_number);
       tr.innerHTML = `
         <td>${attempt.attempt_number}</td>
         <td>${formatDate(new Date(attempt.taken_at))}</td>
@@ -684,6 +745,11 @@
   printBtn.addEventListener("click", () => window.print());
 
   restartBtn.addEventListener("click", () => {
+    // Connecté : inutile de resaisir le profil, il est déjà en base.
+    if (session) {
+      startNewTestFromSession();
+      return;
+    }
     clearState();
     state = emptyState();
     startForm.reset();
@@ -692,7 +758,427 @@
     showScreen("welcome");
   });
 
+  backToAccountBtn.addEventListener("click", () => enterAccount());
+
+  // ============================================================
+  // Connexion du participant et espace personnel
+  // ============================================================
+  //
+  // L'identité repose sur un code à usage unique reçu par e-mail : c'est
+  // la possession de la boîte mail qui ouvre l'accès. Aucun écran ne
+  // permet d'obtenir l'historique de quelqu'un à partir d'un simple
+  // identifiant deviné.
+
+  let session = null; // { participant, history }
+
+  function showLoginError(message) {
+    loginError.textContent = message;
+    loginError.hidden = false;
+  }
+
+  // Trois formulaires se partagent l'écran de connexion : mot de passe
+  // (chemin principal), demande de code puis saisie du code (chemin de
+  // secours). Un seul est visible à la fois.
+  function showLoginStep(step) {
+    loginError.hidden = true;
+    passwordLoginForm.hidden = step !== "password";
+    requestCodeForm.hidden = step !== "request";
+    verifyCodeForm.hidden = step !== "verify";
+    if (step !== "verify") loginCodeInput.value = "";
+  }
+
+  goLoginBtn.addEventListener("click", () => {
+    showLoginStep("password");
+    showScreen("login");
+  });
+
+  loginBackBtn.addEventListener("click", () => showScreen("welcome"));
+  goCodeBtn.addEventListener("click", () => {
+    // L'adresse déjà saisie n'a pas à être retapée.
+    if (passwordLoginEmail.value.trim()) loginEmailInput.value = passwordLoginEmail.value.trim();
+    showLoginStep("request");
+  });
+  backToPasswordBtn.addEventListener("click", () => showLoginStep("password"));
+  resendCodeBtn.addEventListener("click", () => showLoginStep("request"));
+
+  passwordLoginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const submitBtn = passwordLoginForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: passwordLoginEmail.value.trim(),
+          password: passwordLoginPassword.value,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showLoginError(data.error || "E-mail ou mot de passe incorrect.");
+        return;
+      }
+      passwordLoginPassword.value = "";
+      if (await loadSession()) enterAccount();
+      else showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+    } catch (err) {
+      showLoginError("Erreur réseau. Réessayer dans un instant.");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  requestCodeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const email = loginEmailInput.value.trim();
+    const submitBtn = requestCodeForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Envoi en cours…";
+
+    try {
+      const res = await fetch("/api/auth/request-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showLoginError(data.error || "Envoi impossible pour le moment.");
+        return;
+      }
+      // Message volontairement identique que l'adresse soit connue ou
+      // non : le serveur ne dit pas qui a déjà passé le test, l'écran ne
+      // doit pas le dire non plus.
+      codeSentNote.textContent =
+        `Si un test a déjà été passé avec ${email}, un code à 6 chiffres ` +
+        `vient d'y être envoyé. Il est valable 10 minutes.`;
+      requestCodeForm.hidden = true;
+      verifyCodeForm.hidden = false;
+      loginCodeInput.focus();
+    } catch (err) {
+      showLoginError("Erreur réseau. Réessayer dans un instant.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Recevoir mon code";
+    }
+  });
+
+  verifyCodeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginError.hidden = true;
+    const submitBtn = verifyCodeForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginEmailInput.value.trim(),
+          code: loginCodeInput.value.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showLoginError(data.error || "Code incorrect ou expiré.");
+        return;
+      }
+      const loaded = await loadSession();
+      if (loaded) {
+        enterAccount();
+        // Arrivée par code : c'est le moment de proposer un mot de passe
+        // à qui n'en a pas encore, la carte est déjà mise en évidence.
+        if (!session.participant.hasPassword) {
+          accountPasswordCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      } else {
+        showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+      }
+    } catch (err) {
+      showLoginError("Erreur réseau. Réessayer dans un instant.");
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  accountLogoutBtn.addEventListener("click", async () => {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    session = null;
+    state = emptyState();
+    clearState();
+    startForm.reset();
+    applyGenderTheme("");
+    showLoginStep("password");
+    loginEmailInput.value = "";
+    passwordLoginEmail.value = "";
+    passwordLoginPassword.value = "";
+    showScreen("welcome");
+  });
+
+  accountEntryBtn.addEventListener("click", () => {
+    // Quitter en pleine passation perd les réponses données : elles ne
+    // sont enregistrées qu'à la 50e. On demande donc confirmation, mais
+    // seulement s'il y a réellement quelque chose à perdre.
+    if (screens.quiz.classList.contains("active")) {
+      const answered = answeredCount(state.answers);
+      if (answered > 0) {
+        const ok = window.confirm(
+          `Quitter le test en cours ?\n\n${answered} réponse${answered > 1 ? "s" : ""} ` +
+            `sur ${TOTAL} ${answered > 1 ? "ont" : "a"} déjà été donnée${answered > 1 ? "s" : ""}, ` +
+            `mais un test n'est enregistré qu'une fois terminé : ` +
+            `ces réponses seront perdues.`
+        );
+        if (!ok) return;
+      }
+      // Sans cet effacement, un rechargement proposerait de reprendre un
+      // test que la personne vient justement d'abandonner.
+      clearState();
+      pendingPassword = "";
+    }
+    enterAccount();
+  });
+
+  // Récupère le dossier du participant connecté. Renvoie false si aucune
+  // session valide n'est en cours — c'est le cas normal d'un visiteur.
+  async function loadSession() {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) {
+        session = null;
+        return false;
+      }
+      const data = await res.json();
+      if (!data || !data.participant) {
+        session = null;
+        return false;
+      }
+      session = { participant: data.participant, history: data.history || [] };
+      return true;
+    } catch (e) {
+      session = null;
+      return false;
+    }
+  }
+
+  // Recharge `state` à partir du dossier en base, pour que tout le rendu
+  // déjà écrit (bulletin, évolution, historique) fonctionne à l'identique
+  // qu'on vienne de passer le test ou qu'on consulte son espace.
+  function hydrateStateFromSession() {
+    const p = session.participant;
+    const history = session.history || [];
+    const latest = history[history.length - 1];
+    state = {
+      ...emptyState(),
+      gender: p.gender || "",
+      firstName: p.first_name || "",
+      lastName: p.last_name || "",
+      email: p.email || "",
+      phone: p.phone || "",
+      city: p.city || "",
+      postalCode: p.postal_code || "",
+      history,
+      attemptNumber: latest ? latest.attempt_number : null,
+    };
+    applyGenderTheme(state.gender);
+  }
+
+  function enterAccount() {
+    if (!session) {
+      showScreen("welcome");
+      return;
+    }
+    hydrateStateFromSession();
+    renderAccount();
+    showScreen("account");
+  }
+
+  function renderAccount() {
+    const p = session.participant;
+    const history = session.history || [];
+    const latest = history[history.length - 1];
+
+    accountTitle.textContent = p.first_name
+      ? `Espace de ${p.first_name}`
+      : "Mon espace";
+    accountSubtitle.textContent = latest
+      ? `Dernier test le ${formatDate(new Date(latest.taken_at))}.`
+      : "Aucun test enregistré pour le moment.";
+
+    const dominant = latest ? dominantNamesOf(latest) : "—";
+    accountStats.innerHTML = `
+      <div class="account-stat"><span class="num">${history.length}</span><span class="label">test${history.length > 1 ? "s" : ""} passé${history.length > 1 ? "s" : ""}</span></div>
+      <div class="account-stat"><span class="num">${latest ? latest.attempt_number : "—"}</span><span class="label">dernier numéro</span></div>
+      <div class="account-stat"><span class="num small">${escapeText(dominant)}</span><span class="label">blessure dominante</span></div>
+    `;
+
+    accountLastReportBtn.hidden = !latest;
+    accountActionsNote.hidden = !latest;
+    renderPasswordCard();
+  }
+
+  // Un dossier ancien n'a pas encore de mot de passe : la carte invite
+  // alors à en définir un, pour que la prochaine connexion se passe du
+  // code e-mail. Sinon elle propose simplement d'en changer.
+  function renderPasswordCard() {
+    const has = !!session.participant.hasPassword;
+    accountPasswordTitle.textContent = has
+      ? "Changer de mot de passe"
+      : "Définir un mot de passe";
+    accountPasswordNote.textContent = has
+      ? "Le nouveau mot de passe remplacera l'actuel dès l'enregistrement."
+      : "Ce dossier n'a pas encore de mot de passe. En définir un permet de se connecter directement la prochaine fois, sans passer par un code.";
+    accountPasswordCard.classList.toggle("highlight", !has);
+    accountPasswordMsg.hidden = true;
+    accountPasswordInput.value = "";
+    accountPasswordConfirm.value = "";
+    // Déplié d'office quand il n'y a pas encore de mot de passe : c'est
+    // la seule action à faire en arrivant par un code e-mail.
+    setPasswordCardOpen(!has);
+  }
+
+  function setPasswordCardOpen(open) {
+    accountPasswordBody.hidden = !open;
+    accountPasswordToggle.setAttribute("aria-expanded", String(open));
+  }
+
+  accountPasswordToggle.addEventListener("click", () => {
+    setPasswordCardOpen(accountPasswordBody.hidden);
+  });
+
+  accountPasswordForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const password = accountPasswordInput.value;
+    const confirm = accountPasswordConfirm.value;
+    accountPasswordMsg.hidden = true;
+    accountPasswordMsg.classList.remove("form-success");
+
+    if (password !== confirm) {
+      accountPasswordMsg.textContent = "Les deux mots de passe ne correspondent pas.";
+      accountPasswordMsg.hidden = false;
+      return;
+    }
+
+    const submitBtn = accountPasswordForm.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        accountPasswordMsg.textContent = data.error || "Enregistrement impossible.";
+        accountPasswordMsg.hidden = false;
+        return;
+      }
+      session.participant.hasPassword = true;
+      renderPasswordCard();
+      // renderPasswordCard replie la carte dès qu'un mot de passe existe :
+      // on la rouvre, sinon la confirmation serait annoncée dans un bloc
+      // masqué et l'enregistrement paraîtrait sans effet.
+      setPasswordCardOpen(true);
+      accountPasswordMsg.textContent = "Mot de passe enregistré.";
+      accountPasswordMsg.classList.add("form-success");
+      accountPasswordMsg.hidden = false;
+    } catch (err) {
+      accountPasswordMsg.textContent = "Erreur réseau. Réessayer dans un instant.";
+      accountPasswordMsg.hidden = false;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  // Nom de la ou des blessures dominantes d'une passation stockée.
+  function dominantNamesOf(attempt) {
+    const ranked = resultsFromAttempt(attempt).sort((a, b) => b.score - a.score);
+    const top = ranked[0].score;
+    return ranked
+      .filter((r) => r.score === top)
+      .map((r) => r.wound.name)
+      .join(" - ");
+  }
+
+  function escapeText(str) {
+    return String(str || "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[c]));
+  }
+
+  // Le graphique d'évolution et le tableau des tests passés ne sont pas
+  // repris ici : le bulletin les porte déjà, et les dupliquer donnait à
+  // cet écran deux lectures du même contenu. L'espace se limite donc à
+  // ce qui s'y décide — refaire le test, ouvrir le bulletin, gérer son
+  // mot de passe.
+  function openReport(attempt) {
+    hydrateStateFromSession();
+    renderResults(attempt);
+    showScreen("results");
+  }
+
+  accountLastReportBtn.addEventListener("click", () => {
+    const history = session.history || [];
+    const latest = history[history.length - 1];
+    if (latest) openReport(latest);
+  });
+
+  accountNewTestBtn.addEventListener("click", startNewTestFromSession);
+
+  // Repasser le test sans reremplir le formulaire : le profil vient du
+  // dossier en base, seules les 50 réponses sont à redonner.
+  function startNewTestFromSession() {
+    hydrateStateFromSession();
+    state.answers = new Array(TOTAL).fill(null);
+    state.currentIndex = 0;
+    state.attemptNumber = null;
+    confettiFired = false;
+    saveState();
+    startQuizFromCurrent();
+  }
+
+  // Après une nouvelle passation réussie, le dossier local doit refléter
+  // ce qui vient d'être enregistré côté serveur.
+  function refreshSessionHistory() {
+    if (session && Array.isArray(state.history)) {
+      session.history = state.history;
+    }
+  }
+
+  // ---------- Barre d'application ----------
+  // Pendant le quiz, « Mon espace » reste la seule sortie proposée, et
+  // demande confirmation : sans elle, une passation lancée par erreur
+  // n'aurait aucune issue. La déconnexion, elle, disparaît — une sortie
+  // suffit, et celle-ci est la moins définitive.
+  function refreshAppBar(screenName) {
+    const inQuiz = screenName === "quiz";
+    accountEntryBtn.hidden = !session || screenName === "account";
+    accountEntryBtn.textContent = inQuiz ? "Quitter le test" : "Mon espace";
+    accountLogoutBtn.hidden = !session || inQuiz;
+    backToAccountBtn.hidden = !session || screenName !== "results";
+  }
+
   // ---------- Init ----------
-  initWelcome();
-  showScreen("welcome");
+  (async function init() {
+    initWelcome();
+    const saved = loadState();
+    const inProgress =
+      saved && answeredCount(saved.answers) > 0 && answeredCount(saved.answers) < TOTAL;
+
+    const loggedIn = await loadSession();
+    // Une passation inachevée prime : la reprendre est plus urgent que
+    // d'afficher l'espace personnel, et le bandeau de reprise est déjà là.
+    if (loggedIn && !inProgress) {
+      enterAccount();
+    } else {
+      showScreen("welcome");
+    }
+  })();
 })();

@@ -46,8 +46,22 @@ quelle passation, import/export CSV, impression PDF, suppression.
   analyse comparative : vraie base SQL, RLS natif, hébergement UE
   possible, quotas gratuits confortables, données portables.
 - **Auth admin = mot de passe + cookie HttpOnly signé HMAC**.
-  Volontairement minimaliste : un seul admin, pas d'utilisateurs
-  finaux à gérer côté auth.
+  Volontairement minimaliste : un seul admin.
+- **Auth participant = e-mail + mot de passe** (chemin principal),
+  **code à 6 chiffres par e-mail** (chemin de secours), puis cookie
+  participant signé — rôle distinct de l'admin, 7 jours.
+  Choisi *contre* une simple recherche par téléphone ou e-mail : sans
+  preuve de possession, l'endpoint deviendrait un moyen de lire le
+  suivi psychologique de n'importe qui à partir d'un identifiant
+  deviné. Le code est stocké en HMAC (jamais en clair), expire en
+  10 min, vaut pour un seul usage, tolère 5 essais, et le nombre
+  d'envois est plafonné par personne. Le mot de passe est haché en
+  **scrypt** (`api/_lib/password.js`) : un hachage rapide type SHA se
+  casserait par force brute hors ligne si la base fuyait.
+  Le code e-mail sert à deux choses : définir un premier mot de passe
+  (tous les dossiers antérieurs n'en ont pas) et en changer quand il
+  est oublié. Un seul endpoint couvre les deux, `set-password`, qui
+  exige une session déjà ouverte.
 
 ### Modèle de données
 
@@ -74,19 +88,31 @@ et `sql/migrations/*.sql`.
 ### Arborescence
 
 ```
-index.html               Écrans public : accueil, quiz, résultats
+index.html               Écrans public : accueil, connexion, espace, quiz, résultats
 admin.html                Tableau de bord admin
-css/style.css             Styles publics (thème rose Leaman + bleu Kanegnon via CSS vars)
+css/style.css             Structure + thème « classique » (rose/bleu selon le genre)
+css/themes.css            Thème « signature » (charte Vie Florissante) + sélecteur
+css/fonts.css             @font-face de Poppins (fichiers dans fonts/, pas de CDN)
 css/admin.css             Styles admin
 js/data.js                Contenu du test : 50 questions + fiches des 5 blessures + genderize()
+js/theme.js               Choix et mémorisation du jeu de thèmes
 js/evolution-chart.js     Graphique d'évolution + légende, partagé public/admin
 js/progress.js            Détection des progrès entre passations (bandeau de félicitations)
 js/confetti.js            Confetti canvas maison, sans dépendance
-js/app.js                 Logique publique (état, scoring local, submit, rendu)
+js/app.js                 Logique publique (état, scoring local, submit, rendu, espace participant)
 js/admin.js               Logique admin
 sql/schema.sql             Schéma pour installation neuve
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
 api/submit.js              Enregistre une passation (validation + upsert par téléphone)
+api/auth/[action].js       Route unique de l'authentification (voir plafond Vercel)
+api/_auth/login.js         Connexion e-mail + mot de passe (chemin principal)
+api/_auth/request-code.js  Envoie un code à 6 chiffres par e-mail (secours)
+api/_auth/verify-code.js   Vérifie le code, ouvre la session participant
+api/_auth/set-password.js  Définit ou change le mot de passe (session requise)
+api/_auth/logout.js        Déconnexion participant
+api/_auth/me.js            Dossier du participant connecté (profil + historique)
+api/_lib/mailer.js         Envoi Resend minimaliste
+api/_lib/password.js       Hachage scrypt des mots de passe
 api/admin/login.js         Auth admin (compare le mot de passe, pose le cookie)
 api/admin/logout.js        Efface le cookie
 api/admin/participants.js  Liste + dernier résultat de chaque participant
@@ -107,8 +133,9 @@ vercel.json                cleanUrls + définition du cron
 | `ADMIN_PASSWORD` | ✅ | Mot de passe pour `/admin.html` |
 | `SESSION_SECRET` | ✅ | Chaîne aléatoire pour signer le cookie admin (ex. `openssl rand -hex 32`) |
 | `CRON_SECRET` | si cron | Vercel l'injecte automatiquement à la tâche planifiée |
-| `RESEND_API_KEY` | optionnel | Active les rappels e-mail à 6 mois |
-| `REMINDER_FROM_EMAIL` | optionnel | Adresse d'expédition des rappels |
+| `RESEND_API_KEY` | si connexion participant | Codes de connexion + rappels e-mail à 6 mois |
+| `REMINDER_FROM_EMAIL` | recommandé | Adresse d'expédition (`Nom <adresse>` accepté) |
+| `REPLY_TO_EMAIL` | recommandé | Où arrivent les réponses — obligatoire si on expédie depuis un sous-domaine technique sans boîte |
 | `APP_URL` | optionnel | URL publique, utilisée dans le lien du mail de rappel |
 
 ⚠️ Les variables **doivent** être définies au niveau **du projet
@@ -130,6 +157,64 @@ redéploiement.
   exactement ce qui a produit chaque évolution ; roll-back facile.
 - **README avec table de variables d'env, chemin de migration et
   bouton « Deploy with Vercel »** — accélère toute reprise.
+
+### Spécificité CSS : les thèmes cassent les états, silencieusement
+
+**Symptôme** : dans le thème signature, le bouton de période actif
+apparaissait blanc sur blanc, et la réponse sélectionnée gardait son
+texte blanc sur un fond pâle.
+**Cause** : `html[data-theme="x"] .classe` pèse (0,2,1) et passe donc
+devant les états écrits `.classe.active` (0,2,0) dans style.css. Le
+thème écrasait le fond sans toucher à la couleur du texte.
+**Règle** : un thème qui redéfinit une surface **doit redonner
+explicitement chaque état actif** (`.active`, `.selected`,
+`:has(input:checked)`, `[data-dominant]`) à une spécificité supérieure.
+**Détection** : un test Playwright qui mesure le **ratio de contraste
+calculé** entre `color` et `backgroundColor` — un test fonctionnel
+passe très bien sur un bouton invisible.
+
+### Un endpoint ouvert ne doit jamais toucher à un secret
+
+**Contexte** : `/api/submit` est public et identifie la personne par son
+téléphone — c'est ce qui permet de relier les passations. En ajoutant le
+mot de passe au formulaire du test, la tentation était de le faire
+enregistrer par le même endpoint.
+**Le piège** : qui connaît un numéro de téléphone aurait pu poser un mot
+de passe sur le dossier de son titulaire, puis se connecter et lire tout
+son suivi psychologique. Une fonctionnalité de confort ouvrait une
+usurpation complète.
+**Règle** : `/api/submit` n'accepte un mot de passe que pour un dossier
+**qu'il crée**. Modifier celui d'un dossier existant passe uniquement par
+`set-password`, qui exige une session déjà prouvée par code e-mail.
+**Test associé** : une passation « pirate » sur le téléphone de
+quelqu'un, avec un mot de passe dans la charge utile, puis vérification
+que l'ancien mot de passe fonctionne toujours et que le nouveau est
+refusé.
+
+### Ne jamais faire transiter un secret par localStorage
+
+L'état du quiz est sérialisé dans `localStorage` à chaque réponse pour
+permettre la reprise. Y ranger le mot de passe choisi au formulaire
+l'aurait laissé en clair sur l'appareil — souvent partagé — longtemps
+après la fin du test. Il vit donc dans une variable de module
+(`pendingPassword`), effacée dès l'envoi. Un test relit `localStorage`
+après la passation pour vérifier que le mot de passe ne s'y trouve pas.
+
+### Une police de CDN est une fuite de données, pas un détail technique
+
+Charger Poppins depuis `fonts.googleapis.com` envoie l'adresse IP de
+chaque visiteur à Google, ce que la justice européenne a jugé contraire
+au RGPD en l'absence de consentement — pour une association française qui
+recueille du suivi psychologique, c'est disqualifiant.
+**Correctif** : les six `.woff2` (3 graisses × latin et latin-ext) vivent
+dans `fonts/`, déclarés par `css/fonts.css`. 39 Ko au total, et
+`unicode-range` laisse le navigateur ne prendre que ce dont la page a
+besoin — en pratique le seul `latin`, soit 23 Ko.
+**Au passage** : le devanagari livré par défaut par Google était inutile
+ici, un tiers du poids économisé sans rien perdre.
+**Test associé** : un test compte les requêtes sortantes au chargement
+des deux pages et échoue s'il en part une seule vers un autre domaine.
+Vérifier « la police s'affiche » ne dit rien sur d'où elle vient.
 
 ### Confidentialité et sécurité par construction
 
@@ -215,6 +300,27 @@ substring(id::text, 1, 8) where phone is null or phone = ''` avant le
 `SET NOT NULL`. Idem pour dédoublonnage avant `UNIQUE`.
 **Leçon** : toute contrainte plus stricte doit être précédée du
 remplissage / de la déduplication qui la rend valide.
+
+### Le plan Hobby de Vercel plafonne à 12 fonctions serverless
+
+**Symptôme** : `Build Failed — No more than 12 Serverless Functions can be
+added to a Deployment on the Hobby plan`. Trois commits d'affilée non
+déployés, alors que tout passait en local.
+**Cause** : **chaque fichier `.js` de `api/` devient une fonction**.
+Ajouter six endpoints d'authentification a fait passer le projet de 9 à
+15. Le build échoue *après* « Build Completed », au moment de déployer —
+donc les logs de build sont verts et n'aident pas.
+**Correctif** : une **route dynamique** `api/auth/[action].js` regroupe
+les six chemins en une seule fonction, les handlers étant déplacés sous
+`api/_auth/`. **Un dossier préfixé par `_` n'est pas transformé en
+fonction** — c'est déjà ce qui fait que `api/_lib/` ne compte pas.
+Vercel place le segment d'URL dans `req.query.action`, donc **les URL
+publiques ne changent pas**.
+**Vérification** : à `origin/main`, `api/` contenait 13 fichiers dont 9
+endpoints et ça buildait — la preuve empirique que `_lib` ne compte pas,
+avant de s'appuyer dessus.
+**Garde-fou** : un test compte les fichiers de `api/` hors préfixe `_` et
+échoue au-delà de 12. Sans lui, on ne s'en aperçoit qu'au déploiement.
 
 ### Envs Vercel « Shared » vs projet
 

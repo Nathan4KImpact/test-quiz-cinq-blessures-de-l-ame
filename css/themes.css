@@ -1,0 +1,444 @@
+/* ============================================================
+   Jeux de thèmes
+   ============================================================
+
+   Deux ensembles cohabitent, choisis par l'attribut data-theme sur
+   <html> (posé avant le premier rendu par le script inline en <head>,
+   ce qui évite de voir la page changer d'apparence après coup) :
+
+     data-theme="classique"  → l'habillage d'origine, défini dans
+                               style.css. Ce fichier ne le touche pas.
+     data-theme="signature"  → la charte de Vie Florissante, ci-dessous.
+                               C'est le thème par défaut.
+
+   Le genre reste porté par data-gender sur <body> : chaque thème
+   décline donc deux palettes. Les sélecteurs `html[data-theme] body`
+   (0,1,2) l'emportent sur `body[data-gender]` (0,1,1) de style.css, et
+   la variante masculine `html[data-theme] body[data-gender]` (0,2,2)
+   l'emporte à son tour — l'ordre de chargement n'a pas à être un
+   argument de correction.
+
+   ------------------------------------------------------------
+   Charte reprise du site vieflorissante.com
+   ------------------------------------------------------------
+   - Vert sauge en aplat dominant, texte blanc dessus.
+   - Rose poudré pour les titres et les boutons.
+   - Bordeaux du logo comme couleur forte.
+   - Boutons en pilule, libellés en majuscules espacées.
+   - Sans-serif géométrique arrondie (Poppins).
+
+   Une transposition s'imposait : le site pose son texte en blanc sur un
+   grand aplat vert, ce qui fonctionne pour une page de présentation mais
+   pas pour un questionnaire de 50 écrans ni pour des tableaux de
+   résultats. Le vert devient donc la teinte du fond de page, le contenu
+   vit sur des cartes blanches — exactement la façon dont la marque se
+   décline déjà sur sa plateforme applicative.
+
+   Le rose poudré et le bordeaux du site étant tous deux des couleurs de
+   marque, la distinction homme/femme s'appuie sur elles plutôt que sur
+   un rose et un bleu étrangers à la charte : bordeaux pour le féminin,
+   vert profond pour le masculin. Les surfaces, elles, restent
+   identiques, pour que l'application reste reconnaissable dans les deux
+   cas.
+   ============================================================ */
+
+/* ---------- Signature — palette féminine (par défaut) ---------- */
+
+html[data-theme="signature"] body {
+  /* Couleurs de marque, reprises telles quelles du site */
+  --vf-green: #7cbd8f;
+  --vf-green-deep: #2c7a52;
+  --vf-rose-powder: #e2cac1;
+  --vf-burgundy: #8c2740;
+
+  --rose: var(--vf-burgundy);
+  --rose-dark: #6f1f33;
+  --rose-light: rgba(140, 39, 64, 0.09);
+  --lavender: #a8506a;
+  --ink: #2a3b30;
+  --ink-soft: #5f7166;
+
+  /* Le vert doit rester nettement perceptible : c'est lui qui rend
+     l'application reconnaissable comme celle de l'association. Les cartes
+     étant blanches, un fond franchement teinté les détache mieux qu'un
+     blanc cassé. */
+  --bg: #e4f1e8;
+  --bg-start: #f2faf5;
+  --bg-end: #d3e8da;
+
+  --card-bg: #ffffff;
+  --border: rgba(42, 59, 48, 0.1);
+  --hairline: rgba(42, 59, 48, 0.09);
+  --shadow: 0 1px 2px rgba(30, 50, 38, 0.05), 0 16px 34px -20px rgba(44, 122, 82, 0.35);
+  --shadow-accent: rgba(140, 39, 64, 0.35);
+  --radius: 20px;
+
+  --tier-high: var(--vf-burgundy);
+  --tier-moderate: #c0883c;
+  --tier-low: #57988a;
+  --tier-minimal: #8fa593;
+
+  --blob-a: rgba(124, 189, 143, 0.5);
+  --blob-b: rgba(226, 202, 193, 0.55);
+}
+
+/* ---------- Signature — palette masculine ---------- */
+
+html[data-theme="signature"] body[data-gender="homme"] {
+  --rose: var(--vf-green-deep);
+  --rose-dark: #205c3d;
+  --rose-light: rgba(44, 122, 82, 0.1);
+  --lavender: #3f8f6a;
+  --ink: #23342a;
+  --ink-soft: #5a6f62;
+
+  --shadow: 0 1px 2px rgba(20, 45, 32, 0.05), 0 16px 34px -20px rgba(44, 122, 82, 0.38);
+  --shadow-accent: rgba(44, 122, 82, 0.35);
+
+  --tier-high: var(--vf-green-deep);
+
+  --blob-a: rgba(124, 189, 143, 0.55);
+  --blob-b: rgba(44, 122, 82, 0.2);
+}
+
+/* ---------- Fond : le vert de la marque, en voile ---------- */
+
+html[data-theme="signature"] body {
+  background:
+    radial-gradient(58ch 46ch at 8% -10%, var(--blob-a) 0%, transparent 62%),
+    radial-gradient(46ch 40ch at 102% 6%, var(--blob-b) 0%, transparent 58%),
+    linear-gradient(180deg, var(--bg-start) 0%, var(--bg) 40%, var(--bg-end) 100%);
+  background-attachment: fixed;
+  font-family: "Poppins", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Le bandeau d'en-tête du site est animé, les fleurs bougeant comme sous
+   un vent léger. On en garde l'intention plutôt que l'image : les voiles
+   de couleur dérivent très lentement, assez pour que la page respire,
+   trop peu pour capter l'attention pendant un questionnaire.
+   L'animation porte sur une couche dédiée, en position fixe et sans
+   interaction possible, afin de ne jamais déplacer le contenu. */
+html[data-theme="signature"] body::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(30ch 26ch at 22% 28%, var(--blob-a) 0%, transparent 62%),
+    radial-gradient(26ch 22ch at 78% 68%, var(--blob-b) 0%, transparent 58%);
+  opacity: 0.5;
+  animation: vf-breeze 34s ease-in-out infinite alternate;
+}
+
+@keyframes vf-breeze {
+  from {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, 1.5%, 0) scale(1.06);
+  }
+}
+
+/* Respecte le réglage système : pour qui a désactivé les animations, le
+   voile reste en place. */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="signature"] body::before {
+    animation: none;
+  }
+}
+
+/* ---------- Surfaces ---------- */
+
+html[data-theme="signature"] .card {
+  background: var(--card-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 30px 26px;
+  box-shadow: var(--shadow);
+}
+
+html[data-theme="signature"] .dominant-card {
+  border-top: 1px solid var(--hairline);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Filet de couleur reprenant les deux teintes de la marque. */
+html[data-theme="signature"] .dominant-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--vf-green), var(--rose), var(--vf-rose-powder));
+}
+
+/* ---------- Typographie ---------- */
+
+html[data-theme="signature"] h1,
+html[data-theme="signature"] h2,
+html[data-theme="signature"] h3 {
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--rose-dark);
+}
+
+html[data-theme="signature"] .dove {
+  font-size: 2rem;
+}
+
+html[data-theme="signature"] .eyebrow {
+  letter-spacing: 0.16em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+html[data-theme="signature"] .intro,
+html[data-theme="signature"] .section-note,
+html[data-theme="signature"] .accordion-body p,
+html[data-theme="signature"] .accordion-body li {
+  line-height: 1.7;
+}
+
+html[data-theme="signature"] .verse {
+  border-left: 3px solid var(--vf-green);
+}
+
+/* ---------- Contrôles : la pilule du site ---------- */
+
+html[data-theme="signature"] .btn {
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.82rem;
+  padding: 15px 22px;
+}
+
+/* Le site utilise des aplats unis, pas des dégradés. */
+html[data-theme="signature"] .btn-primary {
+  background: var(--rose);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(20, 15, 25, 0.1), 0 12px 24px -14px var(--shadow-accent);
+}
+
+html[data-theme="signature"] .btn-primary:hover {
+  background: var(--rose-dark);
+}
+
+/* Le bouton « FAIRE UN DON » du site : pilule contourée, fond clair. */
+html[data-theme="signature"] .btn-ghost {
+  border: 1.5px solid var(--vf-green);
+  background: #fff;
+  color: var(--rose-dark);
+}
+
+html[data-theme="signature"] .btn-ghost:hover {
+  background: rgba(124, 189, 143, 0.12);
+}
+
+html[data-theme="signature"] input[type="text"],
+html[data-theme="signature"] input[type="email"],
+html[data-theme="signature"] input[type="tel"],
+html[data-theme="signature"] input[type="password"],
+html[data-theme="signature"] .phone-row select,
+html[data-theme="signature"] .table-toolbar input[type="search"],
+html[data-theme="signature"] .table-toolbar select {
+  border: 1px solid var(--border);
+  background: #fbfdfb;
+  border-radius: 14px;
+}
+
+html[data-theme="signature"] .answer-btn {
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+html[data-theme="signature"] .gender-option {
+  border: 1.5px solid var(--border);
+  background: #fff;
+  border-radius: 16px;
+}
+
+html[data-theme="signature"] .range-btn {
+  border: 1.5px solid var(--border);
+  background: #fff;
+  font-weight: 600;
+}
+
+html[data-theme="signature"] .accordion-item {
+  border: 1px solid var(--hairline);
+  background: #fff;
+}
+
+html[data-theme="signature"] .progress-fill {
+  background: linear-gradient(90deg, var(--vf-green), var(--rose));
+}
+
+html[data-theme="signature"] .progress-track {
+  background: rgba(124, 189, 143, 0.22);
+}
+
+html[data-theme="signature"] .facts li {
+  background: rgba(124, 189, 143, 0.16);
+  color: var(--rose-dark);
+}
+
+html[data-theme="signature"] .progress-card {
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--vf-green);
+}
+
+html[data-theme="signature"] .chart-track {
+  background: rgba(42, 59, 48, 0.07);
+}
+
+/* ---------- Tableaux ---------- */
+
+html[data-theme="signature"] .admin-table th,
+html[data-theme="signature"] .history-table th {
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+html[data-theme="signature"] .admin-table td,
+html[data-theme="signature"] .history-table td {
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* ---------- États actifs ----------
+
+   Les règles ci-dessus ciblent `html[data-theme] .classe` (0,2,1), ce qui
+   passe devant les états de style.css écrits en `.classe.etat` (0,2,0) :
+   sans les reprises qui suivent, un bouton sélectionné perdrait son fond
+   tout en gardant son texte blanc — donc illisible. Chaque état est donc
+   redonné explicitement, à une spécificité supérieure. */
+
+html[data-theme="signature"] .answer-btn.selected {
+  background: var(--rose);
+  border-color: var(--rose);
+  color: #fff;
+  box-shadow: 0 6px 18px -8px var(--shadow-accent);
+}
+
+html[data-theme="signature"] .answer-btn:hover {
+  border-color: var(--vf-green);
+}
+
+html[data-theme="signature"] .range-btn.active {
+  background: var(--rose);
+  border-color: var(--rose);
+  color: #fff;
+}
+
+html[data-theme="signature"] .gender-option:has(input:checked) {
+  border-color: var(--rose);
+  background: var(--rose-light);
+}
+
+html[data-theme="signature"] .accordion-item[data-dominant="true"] {
+  border-color: var(--rose);
+}
+
+html[data-theme="signature"] .history-row.current,
+html[data-theme="signature"] .attempt-row.selected {
+  background: var(--rose-light);
+}
+
+html[data-theme="signature"] #account-password-card.highlight {
+  border-left: 3px solid var(--rose);
+}
+
+/* ============================================================
+   Sélecteur de thème et barre d'application
+   ============================================================ */
+
+.app-bar {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* Sur l'admin, la barre suit la largeur du tableau de bord. */
+#admin-app .app-bar {
+  max-width: 960px;
+}
+
+.theme-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.theme-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.theme-btn:hover {
+  color: var(--rose-dark);
+}
+
+.theme-btn[aria-pressed="true"] {
+  background: var(--rose);
+  color: #fff;
+}
+
+.app-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+@media (max-width: 430px) {
+  .theme-btn {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Ni la barre d'outils ni le voile animé n'ont de sens sur papier :
+   le PDF doit sortir sur fond blanc opaque et parfaitement lisible. */
+@media print {
+  .app-bar {
+    display: none !important;
+  }
+
+  html[data-theme="signature"] body {
+    background: #fff !important;
+  }
+
+  html[data-theme="signature"] body::before {
+    display: none !important;
+  }
+
+  html[data-theme="signature"] .card,
+  html[data-theme="signature"] .accordion-item,
+  html[data-theme="signature"] .answer-btn,
+  html[data-theme="signature"] .btn-ghost {
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}

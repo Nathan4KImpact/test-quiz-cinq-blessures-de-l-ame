@@ -1,5 +1,6 @@
 const { supabaseRequest } = require("./_lib/supabase");
 const { computeScores, isValidAnswers, describeAnswersProblem } = require("./_lib/scoring");
+const { hashPassword, isValidPassword } = require("./_lib/password");
 
 // Volontairement permissif : aligné sur la validation native du navigateur
 // (input type="email"), qui n'exige pas de point dans le domaine. Un
@@ -72,6 +73,7 @@ module.exports = async (req, res) => {
   const postalCode = ((body && body.postalCode) || "").trim();
   const answers = body && body.answers;
   const consent = body && body.consent === true;
+  const password = String((body && body.password) || "");
 
   const validationErrors = [];
   if (!body) validationErrors.push("corps de requête vide ou illisible");
@@ -104,6 +106,13 @@ module.exports = async (req, res) => {
 
     let participantId;
     if (existing && existing.length > 0) {
+      // Dossier existant : on met à jour le profil, mais JAMAIS le mot de
+      // passe, même si la requête en contient un. Cet endpoint est ouvert
+      // et identifie par téléphone : accepter un mot de passe ici
+      // permettrait à qui connaît un numéro de s'attribuer le dossier de
+      // son titulaire, et d'en lire tout le suivi. Changer son mot de
+      // passe passe obligatoirement par /api/auth/set-password, qui exige
+      // une session prouvée par code e-mail.
       participantId = existing[0].id;
       await supabaseRequest(`/participants?id=eq.${participantId}`, {
         method: "PATCH",
@@ -119,6 +128,10 @@ module.exports = async (req, res) => {
         }),
       });
     } else {
+      // Dossier neuf : la personne qui le crée en définit le mot de passe.
+      const passwordFields = isValidPassword(password)
+        ? { password_hash: await hashPassword(password), password_set_at: now }
+        : {};
       const created = await supabaseRequest(`/participants`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -131,6 +144,7 @@ module.exports = async (req, res) => {
           city: city || null,
           postal_code: postalCode || null,
           last_test_at: now,
+          ...passwordFields,
         }),
       });
       participantId = created[0].id;

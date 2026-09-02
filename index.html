@@ -1,17 +1,40 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="signature">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="description" content="Test des 5 blessures de l'âme — identifie ta blessure dominante et reçois des pistes d'accompagnement psychologique et spirituel." />
-<meta name="theme-color" content="#c2478b" />
+<meta name="theme-color" content="#7cbd8f" />
 <title>Test des 5 blessures de l'âme</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>" />
+<!-- Le thème mémorisé est appliqué avant le premier rendu : sinon la page
+     s'afficherait brièvement dans le thème par défaut avant de basculer. -->
+<script>
+  try {
+    var t = localStorage.getItem("blessures-ame-theme");
+    if (t === "classique" || t === "signature") document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
+<!-- Poppins, la police du site de l'association, servie depuis ce dépôt :
+     aucune requête ne part vers un tiers au chargement de la page. -->
+<link rel="stylesheet" href="css/fonts.css" />
 <link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/themes.css" />
 </head>
 <body>
 
 <div id="app">
+
+  <div class="app-bar">
+    <div class="theme-switch" role="group" aria-label="Jeu de thèmes">
+      <button type="button" class="theme-btn" data-theme-choice="signature" aria-pressed="true">Vie Florissante</button>
+      <button type="button" class="theme-btn" data-theme-choice="classique" aria-pressed="false">Classique</button>
+    </div>
+    <div class="app-bar-actions">
+      <button type="button" id="account-entry" class="link-btn" hidden>Mon espace</button>
+      <button type="button" id="account-logout" class="link-btn" hidden>Se déconnecter</button>
+    </div>
+  </div>
 
   <!-- ===================== ÉCRAN D'ACCUEIL ===================== -->
   <section id="screen-welcome" class="screen" aria-hidden="false">
@@ -70,6 +93,10 @@
         <label for="email">Email</label>
         <input type="email" id="email" name="email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
 
+        <label for="signup-password">Mot de passe</label>
+        <input type="password" id="signup-password" name="signup-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
+        <p class="field-hint">Il permettra de revenir consulter l'évolution des résultats. Pour un test déjà passé avec ce numéro, le mot de passe existant reste inchangé.</p>
+
         <div class="form-row">
           <div class="form-col">
             <label for="city">Ville</label>
@@ -95,6 +122,121 @@
         ·
         <button type="button" id="discard-btn" class="link-btn">Recommencer à zéro</button>
       </p>
+
+      <p class="welcome-login-hint">
+        Test déjà passé ?
+        <button type="button" id="go-login-btn" class="link-btn">Retrouver mes résultats</button>
+      </p>
+    </div>
+  </section>
+
+  <!-- ===================== CONNEXION PARTICIPANT ===================== -->
+  <section id="screen-login" class="screen" aria-hidden="true">
+    <div class="card login-card">
+      <p class="dove" aria-hidden="true">🕊️</p>
+      <h1>Retrouver mes résultats</h1>
+
+      <!-- Chemin principal : e-mail + mot de passe -->
+      <form id="password-login-form">
+        <label for="password-login-email">Adresse e-mail</label>
+        <input type="email" id="password-login-email" name="password-login-email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
+
+        <label for="password-login-password">Mot de passe</label>
+        <input type="password" id="password-login-password" name="password-login-password" autocomplete="current-password" maxlength="200" required />
+
+        <button type="submit" class="btn btn-primary">Me connecter</button>
+        <p class="section-note">
+          <button type="button" id="go-code-btn" class="link-btn">Mot de passe oublié, ou jamais défini ?</button>
+        </p>
+      </form>
+
+      <!-- Chemin de secours, étape 1 : l'adresse e-mail -->
+      <form id="request-code-form" hidden>
+        <p class="intro">
+          Un code à 6 chiffres est envoyé à l'adresse indiquée lors du test.
+          Il prouve que la boîte mail appartient bien à la personne
+          concernée — c'est ce qui protège les résultats de chacun. Un
+          mot de passe pourra ensuite être défini depuis l'espace
+          personnel.
+        </p>
+        <label for="login-email">Adresse e-mail</label>
+        <input type="email" id="login-email" name="login-email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
+        <button type="submit" class="btn btn-primary">Recevoir mon code</button>
+        <p class="section-note">
+          <button type="button" id="back-to-password-btn" class="link-btn">Revenir à la connexion par mot de passe</button>
+        </p>
+      </form>
+
+      <!-- Chemin de secours, étape 2 : le code reçu -->
+      <form id="verify-code-form" hidden>
+        <p class="intro" id="code-sent-note"></p>
+        <label for="login-code">Code à 6 chiffres</label>
+        <input type="text" id="login-code" name="login-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456" class="code-input" required />
+        <button type="submit" class="btn btn-primary">Valider le code</button>
+        <p class="section-note">
+          Code non reçu ?
+          <button type="button" id="resend-code-btn" class="link-btn">Changer d'adresse ou renvoyer</button>
+        </p>
+      </form>
+
+      <p id="login-error" class="form-error" hidden></p>
+
+      <div class="results-footer">
+        <button type="button" id="login-back-btn" class="link-btn">Retour à l'accueil</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ESPACE PARTICIPANT ===================== -->
+  <section id="screen-account" class="screen" aria-hidden="true">
+    <div class="results-shell">
+
+      <div class="card account-header">
+        <p class="dove" aria-hidden="true">🕊️</p>
+        <h1 id="account-title">Mon espace</h1>
+        <p class="section-note" id="account-subtitle"></p>
+      </div>
+
+      <div class="card">
+        <div class="account-stats" id="account-stats"><!-- generated in JS --></div>
+        <div class="account-actions">
+          <button type="button" id="account-new-test" class="btn btn-primary">Faire un nouveau test</button>
+          <button type="button" id="account-last-report" class="btn btn-ghost">Voir mon dernier bulletin</button>
+        </div>
+        <!-- L'évolution et les tests passés vivent dans le bulletin, pour
+             garder cet écran à une seule décision. -->
+        <p class="section-note account-actions-note" id="account-actions-note" hidden>
+          Le bulletin contient l'évolution des blessures et l'accès aux tests passés.
+        </p>
+      </div>
+
+      <!-- Mot de passe : définition pour un dossier ancien, ou changement.
+           Replié par défaut — changer son mot de passe est rare, et le
+           formulaire déplié occupait la moitié de l'écran pour rien. Il
+           s'ouvre d'office quand le dossier n'en a pas encore : c'est
+           alors la seule action à faire ici. -->
+      <section id="account-password-card" class="card">
+        <button type="button" id="account-password-toggle" class="card-toggle"
+                aria-expanded="false" aria-controls="account-password-body">
+          <span class="card-toggle-text">
+            <span class="card-toggle-title" id="account-password-title">Mot de passe</span>
+            <span class="card-toggle-note" id="account-password-note"></span>
+          </span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </button>
+
+        <div id="account-password-body" hidden>
+          <form id="account-password-form">
+            <label for="account-password">Nouveau mot de passe</label>
+            <input type="password" id="account-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
+            <label for="account-password-confirm">Confirmation</label>
+            <input type="password" id="account-password-confirm" autocomplete="new-password" minlength="8" maxlength="200" required />
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </form>
+          <p id="account-password-msg" class="form-error" hidden></p>
+        </div>
+      </section>
+
     </div>
   </section>
 
@@ -219,6 +361,7 @@
       </div>
 
       <div class="results-footer">
+        <button type="button" id="back-to-account-btn" class="link-btn" hidden>← Retour à mon espace</button>
         <button type="button" id="restart-btn" class="link-btn">Refaire le test</button>
       </div>
     </div>
@@ -226,6 +369,7 @@
 
 </div>
 
+<script src="js/theme.js"></script>
 <script src="js/data.js"></script>
 <script src="js/evolution-chart.js"></script>
 <script src="js/progress.js"></script>
