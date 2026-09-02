@@ -49,7 +49,7 @@ sont stockées dans un projet **Supabase** (Postgres géré).
 index.html              Écrans public : accueil (profil), quiz, résultats
 admin.html               Tableau de bord admin (login + suivi des participants)
 css/style.css            Styles de l'app publique (structure + thème « classique »)
-css/themes.css           Thème « signature » + sélecteur de thème
+css/themes.css           Thème « signature » (charte Vie Florissante) + sélecteur
 css/admin.css            Styles du tableau de bord admin
 js/data.js               Contenu du test : 50 questions + fiches des 5 blessures
 js/theme.js              Choix et mémorisation du jeu de thèmes

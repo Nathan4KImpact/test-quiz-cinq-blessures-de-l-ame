@@ -175,8 +175,10 @@
 
   function applyGenderTheme(gender) {
     document.body.dataset.gender = gender || "";
-    if (themeColorMeta) {
-      themeColorMeta.setAttribute("content", gender === "homme" ? "#2f6fb0" : "#c2478b");
+    // La couleur d'interface est déduite de l'accent réellement appliqué
+    // (js/theme.js), pour rester juste quel que soit le thème actif.
+    if (themeColorMeta && typeof syncThemeColorMeta === "function") {
+      syncThemeColorMeta();
     }
     const verseText = genderize(verseTemplate, gender);
     if (verseWelcome) verseWelcome.textContent = verseText;

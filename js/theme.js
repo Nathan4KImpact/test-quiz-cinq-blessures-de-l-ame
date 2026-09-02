@@ -21,6 +21,19 @@ function readStoredTheme() {
   }
 }
 
+/**
+ * Aligne la couleur d'interface du navigateur mobile (barre d'adresse)
+ * sur l'accent courant. Lue depuis la variable CSS plutôt que codée en
+ * dur : elle suit ainsi le thème ET le genre sans table de
+ * correspondance à maintenir en double.
+ */
+function syncThemeColorMeta() {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  const accent = getComputedStyle(document.body).getPropertyValue("--rose").trim();
+  if (accent) meta.setAttribute("content", accent);
+}
+
 function applyTheme(theme) {
   const chosen = THEMES.includes(theme) ? theme : DEFAULT_THEME;
   document.documentElement.dataset.theme = chosen;
@@ -32,6 +45,7 @@ function applyTheme(theme) {
   document.querySelectorAll("[data-theme-choice]").forEach((btn) => {
     btn.setAttribute("aria-pressed", String(btn.dataset.themeChoice === chosen));
   });
+  syncThemeColorMeta();
 }
 
 function initThemeSwitch() {

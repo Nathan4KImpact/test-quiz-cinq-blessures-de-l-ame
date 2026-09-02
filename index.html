@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="description" content="Test des 5 blessures de l'âme — identifie ta blessure dominante et reçois des pistes d'accompagnement psychologique et spirituel." />
-<meta name="theme-color" content="#c2478b" />
+<meta name="theme-color" content="#7cbd8f" />
 <title>Test des 5 blessures de l'âme</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>" />
 <!-- Le thème mémorisé est appliqué avant le premier rendu : sinon la page
@@ -15,6 +15,11 @@
     if (t === "classique" || t === "signature") document.documentElement.dataset.theme = t;
   } catch (e) {}
 </script>
+<!-- Poppins : la sans-serif géométrique arrondie du site de l'association.
+     La pile de repli couvre le cas d'un chargement bloqué ou hors ligne. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/themes.css" />
 </head>
@@ -24,7 +29,7 @@
 
   <div class="app-bar">
     <div class="theme-switch" role="group" aria-label="Jeu de thèmes">
-      <button type="button" class="theme-btn" data-theme-choice="signature" aria-pressed="true">Signature</button>
+      <button type="button" class="theme-btn" data-theme-choice="signature" aria-pressed="true">Vie Florissante</button>
       <button type="button" class="theme-btn" data-theme-choice="classique" aria-pressed="false">Classique</button>
     </div>
     <div class="app-bar-actions">

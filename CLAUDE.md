@@ -91,7 +91,7 @@ et `sql/migrations/*.sql`.
 index.html               Écrans public : accueil, connexion, espace, quiz, résultats
 admin.html                Tableau de bord admin
 css/style.css             Structure + thème « classique » (rose/bleu selon le genre)
-css/themes.css            Thème « signature » (surfaces translucides) + sélecteur
+css/themes.css            Thème « signature » (charte Vie Florissante) + sélecteur
 css/admin.css             Styles admin
 js/data.js                Contenu du test : 50 questions + fiches des 5 blessures + genderize()
 js/theme.js               Choix et mémorisation du jeu de thèmes
