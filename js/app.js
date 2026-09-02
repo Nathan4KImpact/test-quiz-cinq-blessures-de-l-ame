@@ -915,7 +915,28 @@
     showScreen("welcome");
   });
 
-  accountEntryBtn.addEventListener("click", () => enterAccount());
+  accountEntryBtn.addEventListener("click", () => {
+    // Quitter en pleine passation perd les réponses données : elles ne
+    // sont enregistrées qu'à la 50e. On demande donc confirmation, mais
+    // seulement s'il y a réellement quelque chose à perdre.
+    if (screens.quiz.classList.contains("active")) {
+      const answered = answeredCount(state.answers);
+      if (answered > 0) {
+        const ok = window.confirm(
+          `Quitter le test en cours ?\n\n${answered} réponse${answered > 1 ? "s" : ""} ` +
+            `sur ${TOTAL} ${answered > 1 ? "ont" : "a"} déjà été donnée${answered > 1 ? "s" : ""}, ` +
+            `mais un test n'est enregistré qu'une fois terminé : ` +
+            `ces réponses seront perdues.`
+        );
+        if (!ok) return;
+      }
+      // Sans cet effacement, un rechargement proposerait de reprendre un
+      // test que la personne vient justement d'abandonner.
+      clearState();
+      pendingPassword = "";
+    }
+    enterAccount();
+  });
 
   // Récupère le dossier du participant connecté. Renvoie false si aucune
   // session valide n'est en cours — c'est le cas normal d'un visiteur.
@@ -1112,11 +1133,14 @@
   }
 
   // ---------- Barre d'application ----------
-  // Les entrées liées au compte disparaissent pendant le quiz : y toucher
-  // en pleine passation ferait perdre les réponses en cours.
+  // Pendant le quiz, « Mon espace » reste la seule sortie proposée, et
+  // demande confirmation : sans elle, une passation lancée par erreur
+  // n'aurait aucune issue. La déconnexion, elle, disparaît — une sortie
+  // suffit, et celle-ci est la moins définitive.
   function refreshAppBar(screenName) {
     const inQuiz = screenName === "quiz";
-    accountEntryBtn.hidden = !session || inQuiz || screenName === "account";
+    accountEntryBtn.hidden = !session || screenName === "account";
+    accountEntryBtn.textContent = inQuiz ? "Quitter le test" : "Mon espace";
     accountLogoutBtn.hidden = !session || inQuiz;
     backToAccountBtn.hidden = !session || screenName !== "results";
   }
