@@ -1015,7 +1015,62 @@ input[type="tel"]:focus {
 }
 
 #account-password-card form {
-  margin-top: 4px;
+  margin-top: 14px;
+}
+
+/* En-tête cliquable d'une carte repliable. Le bouton occupe toute la
+   largeur pour que la zone de clic couvre la ligne entière, et non le
+   seul libellé. */
+.card-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.card-toggle:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.card-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-toggle-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.card-toggle-note {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.card-toggle .chev {
+  flex: 0 0 auto;
+  color: var(--rose-dark);
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: transform 0.22s ease;
+}
+
+.card-toggle[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
 }
 
 .form-success {

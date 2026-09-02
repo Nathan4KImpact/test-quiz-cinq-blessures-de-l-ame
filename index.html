@@ -210,18 +210,31 @@
         </p>
       </div>
 
-      <!-- Mot de passe : définition pour un dossier ancien, ou changement -->
+      <!-- Mot de passe : définition pour un dossier ancien, ou changement.
+           Replié par défaut — changer son mot de passe est rare, et le
+           formulaire déplié occupait la moitié de l'écran pour rien. Il
+           s'ouvre d'office quand le dossier n'en a pas encore : c'est
+           alors la seule action à faire ici. -->
       <section id="account-password-card" class="card">
-        <h3 id="account-password-title">Mot de passe</h3>
-        <p class="section-note" id="account-password-note"></p>
-        <form id="account-password-form">
-          <label for="account-password">Nouveau mot de passe</label>
-          <input type="password" id="account-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
-          <label for="account-password-confirm">Confirmation</label>
-          <input type="password" id="account-password-confirm" autocomplete="new-password" minlength="8" maxlength="200" required />
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-        </form>
-        <p id="account-password-msg" class="form-error" hidden></p>
+        <button type="button" id="account-password-toggle" class="card-toggle"
+                aria-expanded="false" aria-controls="account-password-body">
+          <span class="card-toggle-text">
+            <span class="card-toggle-title" id="account-password-title">Mot de passe</span>
+            <span class="card-toggle-note" id="account-password-note"></span>
+          </span>
+          <span class="chev" aria-hidden="true">⌄</span>
+        </button>
+
+        <div id="account-password-body" hidden>
+          <form id="account-password-form">
+            <label for="account-password">Nouveau mot de passe</label>
+            <input type="password" id="account-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
+            <label for="account-password-confirm">Confirmation</label>
+            <input type="password" id="account-password-confirm" autocomplete="new-password" minlength="8" maxlength="200" required />
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </form>
+          <p id="account-password-msg" class="form-error" hidden></p>
+        </div>
       </section>
 
     </div>

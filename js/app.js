@@ -122,6 +122,8 @@
   const accountLastReportBtn = document.getElementById("account-last-report");
   const accountActionsNote = document.getElementById("account-actions-note");
   const accountPasswordCard = document.getElementById("account-password-card");
+  const accountPasswordToggle = document.getElementById("account-password-toggle");
+  const accountPasswordBody = document.getElementById("account-password-body");
   const accountPasswordTitle = document.getElementById("account-password-title");
   const accountPasswordNote = document.getElementById("account-password-note");
   const accountPasswordForm = document.getElementById("account-password-form");
@@ -1033,7 +1035,19 @@
     accountPasswordMsg.hidden = true;
     accountPasswordInput.value = "";
     accountPasswordConfirm.value = "";
+    // Déplié d'office quand il n'y a pas encore de mot de passe : c'est
+    // la seule action à faire en arrivant par un code e-mail.
+    setPasswordCardOpen(!has);
   }
+
+  function setPasswordCardOpen(open) {
+    accountPasswordBody.hidden = !open;
+    accountPasswordToggle.setAttribute("aria-expanded", String(open));
+  }
+
+  accountPasswordToggle.addEventListener("click", () => {
+    setPasswordCardOpen(accountPasswordBody.hidden);
+  });
 
   accountPasswordForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1064,6 +1078,10 @@
       }
       session.participant.hasPassword = true;
       renderPasswordCard();
+      // renderPasswordCard replie la carte dès qu'un mot de passe existe :
+      // on la rouvre, sinon la confirmation serait annoncée dans un bloc
+      // masqué et l'enregistrement paraîtrait sans effet.
+      setPasswordCardOpen(true);
       accountPasswordMsg.textContent = "Mot de passe enregistré.";
       accountPasswordMsg.classList.add("form-success");
       accountPasswordMsg.hidden = false;
