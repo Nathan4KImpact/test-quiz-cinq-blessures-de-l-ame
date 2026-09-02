@@ -55,10 +55,11 @@ js/data.js               Contenu du test : 50 questions + fiches des 5 blessures
 js/theme.js              Choix et mémorisation du jeu de thèmes
 js/app.js                Logique de l'app publique (état, score, soumission, résultats, espace participant)
 js/admin.js              Logique du tableau de bord admin
-api/auth/request-code.js  Envoie un code de connexion à 6 chiffres par e-mail
-api/auth/verify-code.js   Vérifie le code et ouvre la session participant
-api/auth/logout.js        Déconnexion du participant
-api/me.js                 Dossier du participant connecté (profil + historique)
+api/auth/[action].js      Route unique de l'authentification participant
+api/_auth/                Handlers : login, logout, request-code, verify-code,
+                          set-password, me. Le préfixe « _ » évite que chacun
+                          devienne une fonction serverless (plafond de 12 sur
+                          le plan Hobby) ; les URL restent /api/auth/login…
 sql/schema.sql            Schéma Supabase à exécuter une fois (SQL Editor)
 sql/migrations/           Migrations à jouer dans l'ordre sur une base existante
 sql/seed-demo.sql         Jeu de données fictives, facultatif (démo du suivi)

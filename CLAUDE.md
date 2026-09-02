@@ -103,12 +103,13 @@ js/admin.js               Logique admin
 sql/schema.sql             Schéma pour installation neuve
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
 api/submit.js              Enregistre une passation (validation + upsert par téléphone)
-api/me.js                  Dossier du participant connecté (profil + historique)
-api/auth/login.js          Connexion e-mail + mot de passe (chemin principal)
-api/auth/request-code.js   Envoie un code à 6 chiffres par e-mail (secours)
-api/auth/verify-code.js    Vérifie le code, ouvre la session participant
-api/auth/set-password.js   Définit ou change le mot de passe (session requise)
-api/auth/logout.js         Déconnexion participant
+api/auth/[action].js       Route unique de l'authentification (voir plafond Vercel)
+api/_auth/login.js         Connexion e-mail + mot de passe (chemin principal)
+api/_auth/request-code.js  Envoie un code à 6 chiffres par e-mail (secours)
+api/_auth/verify-code.js   Vérifie le code, ouvre la session participant
+api/_auth/set-password.js  Définit ou change le mot de passe (session requise)
+api/_auth/logout.js        Déconnexion participant
+api/_auth/me.js            Dossier du participant connecté (profil + historique)
 api/_lib/mailer.js         Envoi Resend minimaliste
 api/_lib/password.js       Hachage scrypt des mots de passe
 api/admin/login.js         Auth admin (compare le mot de passe, pose le cookie)
@@ -282,6 +283,27 @@ substring(id::text, 1, 8) where phone is null or phone = ''` avant le
 `SET NOT NULL`. Idem pour dédoublonnage avant `UNIQUE`.
 **Leçon** : toute contrainte plus stricte doit être précédée du
 remplissage / de la déduplication qui la rend valide.
+
+### Le plan Hobby de Vercel plafonne à 12 fonctions serverless
+
+**Symptôme** : `Build Failed — No more than 12 Serverless Functions can be
+added to a Deployment on the Hobby plan`. Trois commits d'affilée non
+déployés, alors que tout passait en local.
+**Cause** : **chaque fichier `.js` de `api/` devient une fonction**.
+Ajouter six endpoints d'authentification a fait passer le projet de 9 à
+15. Le build échoue *après* « Build Completed », au moment de déployer —
+donc les logs de build sont verts et n'aident pas.
+**Correctif** : une **route dynamique** `api/auth/[action].js` regroupe
+les six chemins en une seule fonction, les handlers étant déplacés sous
+`api/_auth/`. **Un dossier préfixé par `_` n'est pas transformé en
+fonction** — c'est déjà ce qui fait que `api/_lib/` ne compte pas.
+Vercel place le segment d'URL dans `req.query.action`, donc **les URL
+publiques ne changent pas**.
+**Vérification** : à `origin/main`, `api/` contenait 13 fichiers dont 9
+endpoints et ça buildait — la preuve empirique que `_lib` ne compte pas,
+avant de s'appuyer dessus.
+**Garde-fou** : un test compte les fichiers de `api/` hors préfixe `_` et
+échoue au-delà de 12. Sans lui, on ne s'en aperçoit qu'au déploiement.
 
 ### Envs Vercel « Shared » vs projet
 

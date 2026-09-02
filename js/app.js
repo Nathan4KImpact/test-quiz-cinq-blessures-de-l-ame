@@ -921,7 +921,7 @@
   // session valide n'est en cours — c'est le cas normal d'un visiteur.
   async function loadSession() {
     try {
-      const res = await fetch("/api/me");
+      const res = await fetch("/api/auth/me");
       if (!res.ok) {
         session = null;
         return false;

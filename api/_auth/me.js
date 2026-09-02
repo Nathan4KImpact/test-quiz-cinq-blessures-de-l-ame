@@ -2,8 +2,8 @@
 // passations. L'identité vient exclusivement du cookie signé — aucun
 // paramètre de la requête ne permet de désigner quelqu'un d'autre.
 
-const { supabaseRequest } = require("./_lib/supabase");
-const { getParticipantId } = require("./_lib/auth");
+const { supabaseRequest } = require("../_lib/supabase");
+const { getParticipantId } = require("../_lib/auth");
 
 module.exports = async (req, res) => {
   const participantId = getParticipantId(req);
