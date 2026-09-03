@@ -27,6 +27,11 @@ rapport personnalisé, et permet un suivi dans le temps.
   a pas d'ex æquo — pour une première lecture non écrasante
 - Chaque passation est enregistrée (base Supabase) et reliée aux tests
   précédents de la même personne via son téléphone, pour suivre son évolution
+- **Un test ne peut être rattaché qu'à son propre dossier** : si les
+  coordonnées saisies correspondent à un dossier déjà en base, il faut s'y
+  connecter avant de commencer. Le mot de passe demandé au formulaire suffit
+  le plus souvent ; sinon l'écran de connexion prend le relais (mot de passe
+  ou code à 6 chiffres par e-mail)
 - **Interface admin** protégée par mot de passe : liste filtrable de tous les
   participants (blessure dominante & modérée en aperçu), et pour chacun un
   graphique d'évolution des 5 blessures dans le temps (6 mois / 1 an / 3 ans
@@ -58,14 +63,16 @@ js/theme.js              Choix et mémorisation du jeu de thèmes
 js/app.js                Logique de l'app publique (état, score, soumission, résultats, espace participant)
 js/admin.js              Logique du tableau de bord admin
 api/auth/[action].js      Route unique de l'authentification participant
-api/_auth/                Handlers : login, logout, request-code, verify-code,
-                          set-password, me. Le préfixe « _ » évite que chacun
-                          devienne une fonction serverless (plafond de 12 sur
-                          le plan Hobby) ; les URL restent /api/auth/login…
+api/_auth/                Handlers : login, precheck, logout, request-code,
+                          verify-code, set-password, me. Le préfixe « _ » évite
+                          que chacun devienne une fonction serverless (plafond
+                          de 12 sur le plan Hobby) ; les URL restent
+                          /api/auth/login…
 sql/schema.sql            Schéma Supabase à exécuter une fois (SQL Editor)
 sql/migrations/           Migrations à jouer dans l'ordre sur une base existante
 sql/seed-demo.sql         Jeu de données fictives, facultatif (démo du suivi)
-api/submit.js             Enregistre une passation (participant + scores)
+api/submit.js             Enregistre une passation (participant + scores),
+                          refusée si le dossier visé existe sans session
 api/admin/login.js        Authentification admin (mot de passe → cookie signé)
 api/admin/logout.js       Déconnexion admin
 api/admin/participants.js Liste de tous les participants + dernier résultat
@@ -77,6 +84,14 @@ api/_lib/                 Petits utilitaires partagés (Supabase REST, scoring, 
 Aucune réponse n'est jamais visible par un tiers autre que toi : la base
 Supabase est verrouillée (RLS activé, aucune policy publique), seules les
 fonctions serverless — via une clé secrète côté serveur — peuvent y accéder.
+
+Côté participant, connaître un numéro de téléphone ou une adresse e-mail ne
+donne accès à rien : `/api/submit` répond **403** s'il faudrait rattacher la
+passation à un dossier existant sans session prouvant qu'on en est le
+titulaire. Le contrôle équivalent côté navigateur (`/api/auth/precheck`, à la
+validation du formulaire) évite seulement de faire répondre 50 questions pour
+rien — c'est le refus serveur qui protège, et une requête forgée ne le
+contourne pas.
 
 ## Mise en place (une seule fois)
 

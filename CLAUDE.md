@@ -62,6 +62,12 @@ quelle passation, import/export CSV, impression PDF, suppression.
   (tous les dossiers antérieurs n'en ont pas) et en changer quand il
   est oublié. Un seul endpoint couvre les deux, `set-password`, qui
   exige une session déjà ouverte.
+- **Passer le test exige aussi de s'authentifier**, dès lors que les
+  coordonnées saisies correspondent à un dossier déjà en base. Le
+  formulaire d'accueil demandait déjà un mot de passe : il sert de
+  preuve (`api/_auth/precheck.js`), et l'écran de connexion ne
+  s'interpose que s'il ne convient pas. Un dossier neuf n'est jamais
+  bloqué, et sa session s'ouvre à sa création.
 
 ### Modèle de données
 
@@ -106,6 +112,7 @@ sql/migrations/            Migrations à exécuter dans l'ordre sur une base exi
 api/submit.js              Enregistre une passation (validation + upsert par téléphone)
 api/auth/[action].js       Route unique de l'authentification (voir plafond Vercel)
 api/_auth/login.js         Connexion e-mail + mot de passe (chemin principal)
+api/_auth/precheck.js      Contrôle d'identité à la validation du formulaire
 api/_auth/request-code.js  Envoie un code à 6 chiffres par e-mail (secours)
 api/_auth/verify-code.js   Vérifie le code, ouvre la session participant
 api/_auth/set-password.js  Définit ou change le mot de passe (session requise)
@@ -352,6 +359,65 @@ pensant son test conservé. Il ne l'est pas.
 tête de l'écran de résultats — les résultats restent affichés, mais on dit
 qu'ils ne rejoindront pas l'historique.
 **Règle** : dégrader gracieusement, oui ; le faire sans le dire, non.
+
+### Le formulaire public était une porte d'entrée sur le dossier d'autrui
+
+**Symptôme** (signalé par l'user en recette) : saisir l'e-mail et le
+téléphone d'une autre personne au formulaire d'accueil, passer le test, et
+son évolution complète plus tous ses tests passés s'affichaient.
+**Cause** : `/api/submit` identifiait par téléphone, rattachait la
+passation au dossier trouvé **et renvoyait son historique**, sans jamais
+demander de preuve. Le commentaire du code justifiait pourtant ce choix
+(« la personne vient de prouver qu'elle détient ce numéro en passant le
+test ») — un raisonnement faux : passer le test ne prouve rien, n'importe
+qui peut répondre à 50 questions avec le numéro d'un autre.
+**Correctif, en deux temps** :
+1. `/api/submit` refuse en **403** de rattacher une passation à un dossier
+   existant sans session participant correspondante — c'est le contrôle qui
+   compte, une requête forgée ne le contourne pas. Le dossier est cherché
+   par téléphone **et** par e-mail : créer un second dossier sur l'adresse
+   de quelqu'un rendrait la connexion ambiguë pour les deux (cf. 005).
+2. `/api/auth/precheck`, appelé à la validation du formulaire, évite de
+   faire répondre 50 questions pour rien. Le mot de passe déjà demandé au
+   formulaire sert de preuve : s'il est bon, la session s'ouvre et le test
+   démarre sans écran supplémentaire ; sinon l'écran de connexion prend le
+   relais en mode « verrou ».
+**Effet de bord voulu** : un dossier neuf ouvre sa session à sa création,
+donc l'espace participant est accessible dans la foulée du premier test.
+**Ce que ça coûte** : le formulaire dit désormais qu'un dossier existe pour
+ces coordonnées. C'est l'oracle classique de tout formulaire d'inscription,
+sans commune mesure avec ce qu'il remplace.
+**Test associé** : `drive-gate` — l'écran refuse de démarrer, aucune donnée
+du dossier visé n'atteint la page, la requête forgée est refusée par
+téléphone comme par e-mail, et le précontrôle ne pose ni ne change aucun
+mot de passe.
+
+### `[hidden]` ne masque rien face à une règle d'auteur
+
+**Symptôme** : sur l'écran de connexion, les trois formulaires (mot de
+passe, demande de code, saisie du code) s'affichaient les uns sous les
+autres alors que `hidden` était bien posé en JS.
+**Cause** : `display: none` sur `[hidden]` vient de la feuille du
+navigateur, et **toute** règle d'auteur la supplante, quelle que soit sa
+spécificité. Un simple `form { display: flex }` suffisait.
+**Correctif** : `[hidden] { display: none !important; }` en tête de la
+section formulaires.
+**Détection** : un test qui lit la propriété `.hidden` passe — elle est
+bien à `true`. Seule une mesure du rendu (`isVisible`, boîte englobante)
+voit le problème.
+
+### Un débordement de grille CSS ne se voit pas dans le DOM
+
+**Symptôme** : sur la fiche admin, l'e-mail débordait sur la colonne
+« Ville ».
+**Cause** : une cellule de grille a `min-width: auto` par défaut et refuse
+de rétrécir sous la largeur de son contenu. Une adresse e-mail est un mot
+insécable : la cellule dépassait sa colonne.
+**Correctif** : `min-width: 0` + `overflow-wrap: anywhere` sur les cellules.
+**Test associé** : `drive-admin-layout` mesure `scrollWidth - clientWidth`
+de chaque cellule à cinq largeurs de fenêtre, et vérifie qu'aucune boîte
+n'en recouvre une autre. Vérifié en remettant l'ancien CSS : le test
+échoue bien aux cinq largeurs.
 
 ### Envs Vercel « Shared » vs projet
 

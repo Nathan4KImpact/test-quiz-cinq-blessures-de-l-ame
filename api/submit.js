@@ -1,6 +1,7 @@
 const { supabaseRequest } = require("./_lib/supabase");
 const { computeScores, isValidAnswers, describeAnswersProblem } = require("./_lib/scoring");
 const { hashPassword, isValidPassword } = require("./_lib/password");
+const { createParticipantSessionCookie, getParticipantId } = require("./_lib/auth");
 
 // Volontairement permissif : aligné sur la validation native du navigateur
 // (input type="email"), qui n'exige pas de point dans le domaine. Un
@@ -100,19 +101,41 @@ module.exports = async (req, res) => {
   try {
     const now = new Date().toISOString();
 
-    const existing = await supabaseRequest(
+    // Un dossier peut être reconnu par son téléphone (clé d'identité) ou
+    // par son e-mail : les deux doivent être verrouillés. Créer un second
+    // dossier sur l'adresse de quelqu'un d'autre rendrait de plus la
+    // connexion ambiguë pour les deux (voir migration 005).
+    let existing = await supabaseRequest(
       `/participants?phone=eq.${encodeURIComponent(phone)}&select=id`
     );
+    if (!existing || existing.length === 0) {
+      existing = await supabaseRequest(
+        `/participants?email=eq.${encodeURIComponent(email)}&select=id`
+      );
+    }
+
+    // Le contrôle décisif : rattacher une passation à un dossier existant
+    // — et en recevoir l'historique — exige d'avoir prouvé qu'on en est le
+    // titulaire. Sans lui, saisir le téléphone ou l'e-mail d'une autre
+    // personne suffisait à lire tout son suivi psychologique. Le contrôle
+    // équivalent côté navigateur (/api/auth/precheck, à la validation du
+    // formulaire) n'est qu'un confort : une requête forgée l'ignore, celui-ci
+    // ne se contourne pas.
+    if (existing && existing.length > 0 && getParticipantId(req) !== existing[0].id) {
+      res.status(403).json({
+        error: "Un dossier existe déjà pour ces coordonnées. Connexion requise.",
+        requiresAuth: true,
+      });
+      return;
+    }
 
     let participantId;
     if (existing && existing.length > 0) {
       // Dossier existant : on met à jour le profil, mais JAMAIS le mot de
-      // passe, même si la requête en contient un. Cet endpoint est ouvert
-      // et identifie par téléphone : accepter un mot de passe ici
-      // permettrait à qui connaît un numéro de s'attribuer le dossier de
-      // son titulaire, et d'en lire tout le suivi. Changer son mot de
-      // passe passe obligatoirement par /api/auth/set-password, qui exige
-      // une session prouvée par code e-mail.
+      // passe, même si la requête en contient un. Une session prouve que
+      // la personne est bien la titulaire du dossier, pas qu'elle a voulu
+      // en changer le mot de passe — cela passe obligatoirement par
+      // /api/auth/set-password.
       participantId = existing[0].id;
       await supabaseRequest(`/participants?id=eq.${participantId}`, {
         method: "PATCH",
@@ -148,6 +171,10 @@ module.exports = async (req, res) => {
         }),
       });
       participantId = created[0].id;
+      // Le dossier vient d'être créé par cette personne : elle en est la
+      // titulaire, on ouvre sa session tout de suite. Sans cela, repasser
+      // le test dans la foulée buterait sur le contrôle ci-dessus.
+      res.setHeader("Set-Cookie", createParticipantSessionCookie(participantId));
     }
 
     const previousAttempts = await supabaseRequest(
@@ -176,10 +203,8 @@ module.exports = async (req, res) => {
 
     // Historique complet de cette personne, renvoyé avec le résultat pour
     // qu'elle puisse visualiser son évolution sur l'écran de résultats.
-    // Volontairement retourné ici plutôt que via un endpoint interrogeable
-    // par numéro : la personne vient de prouver qu'elle détient ce numéro
-    // en passant le test, alors qu'un endpoint ouvert exposerait
-    // l'historique de n'importe qui à partir d'un numéro deviné.
+    // On n'arrive ici que dans deux cas : le dossier vient d'être créé par
+    // cette personne, ou sa session prouve qu'elle en est la titulaire.
     let history = [];
     try {
       history = await supabaseRequest(

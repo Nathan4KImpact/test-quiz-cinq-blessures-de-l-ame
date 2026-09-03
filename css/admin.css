@@ -277,10 +277,18 @@
 
 .participant-meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px 18px;
   font-size: 0.86rem;
   color: var(--ink-soft);
+}
+
+/* Une adresse e-mail est un mot insécable plus large que sa colonne : sans
+   min-width: 0, une cellule de grille refuse de rétrécir sous la taille de
+   son contenu et le texte déborde sur la colonne voisine. */
+.participant-meta > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .participant-meta strong {

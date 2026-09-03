@@ -114,6 +114,7 @@
         </label>
 
         <button type="submit" class="btn btn-primary">Commencer le test</button>
+        <p id="start-error" class="form-error" hidden></p>
       </form>
 
       <p id="resume-banner" class="resume-banner" hidden>
@@ -134,7 +135,15 @@
   <section id="screen-login" class="screen" aria-hidden="true">
     <div class="card login-card">
       <p class="dove" aria-hidden="true">🕊️</p>
-      <h1>Retrouver mes résultats</h1>
+      <h1 id="login-title">Retrouver mes résultats</h1>
+
+      <!-- Affiché quand la connexion est exigée pour continuer un test :
+           des coordonnées correspondent à un dossier déjà en base. -->
+      <p class="intro" id="login-gate-note" hidden>
+        Un test a déjà été passé avec ces coordonnées. Pour continuer, il
+        faut se connecter à ce dossier : c'est ce qui garantit que le suivi
+        de chacun ne peut être consulté que par la personne concernée.
+      </p>
 
       <!-- Chemin principal : e-mail + mot de passe -->
       <form id="password-login-form">
@@ -280,11 +289,17 @@
            pas l'historique tant que le test n'est pas repassé. -->
       <section id="save-warning" class="card save-warning" role="alert" hidden>
         <h2>Résultats non enregistrés</h2>
-        <p>
+        <p id="save-warning-network">
           Ces résultats n'ont pas pu être enregistrés (connexion interrompue ou
           service momentanément indisponible). Ils s'affichent correctement,
           mais ils n'apparaîtront pas dans l'historique ni dans le graphique
           d'évolution.
+        </p>
+        <p id="save-warning-auth" hidden>
+          Un dossier existe déjà pour ces coordonnées et il n'a pas été possible
+          de vérifier qu'il s'agit du vôtre. Ces résultats s'affichent, mais ils
+          n'ont pas été rattachés à ce dossier : le suivi de chacun n'est
+          consultable que par la personne concernée.
         </p>
         <p>Imprimez ou photographiez cette page, puis repassez le test plus tard pour le conserver.</p>
       </section>
