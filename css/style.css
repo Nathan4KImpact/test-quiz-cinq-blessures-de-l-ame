@@ -167,6 +167,15 @@ h3 {
 
 /* ---------- Forms & buttons ---------- */
 
+/* Le display:none de [hidden] vient de la feuille du navigateur, et
+   TOUTE règle d'auteur le supplante quelle que soit sa spécificité : le
+   `display: flex` ci-dessous suffisait à réafficher les formulaires
+   masqués de l'écran de connexion, les trois se superposant à l'écran
+   alors que la propriété `hidden` était bien posée en JS. */
+[hidden] {
+  display: none !important;
+}
+
 form {
   display: flex;
   flex-direction: column;

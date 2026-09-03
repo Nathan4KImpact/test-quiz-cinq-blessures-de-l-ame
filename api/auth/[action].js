@@ -13,6 +13,7 @@
 
 const handlers = {
   login: require("../_auth/login"),
+  precheck: require("../_auth/precheck"),
   logout: require("../_auth/logout"),
   "request-code": require("../_auth/request-code"),
   "verify-code": require("../_auth/verify-code"),

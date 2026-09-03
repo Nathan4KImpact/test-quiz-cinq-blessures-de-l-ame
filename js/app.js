@@ -39,6 +39,9 @@
       // Passe à true si /api/submit n'a pas répondu : l'écran de résultats
       // affiche alors un avertissement au lieu de laisser croire au succès.
       saveFailed: false,
+      // Cas particulier d'échec : le dossier visé existe et l'identité
+      // n'était pas prouvée. Le bandeau le dit alors autrement.
+      saveNeedsAuth: false,
     };
   }
 
@@ -65,6 +68,7 @@
   const postalCodeInput = document.getElementById("postal-code");
   const consentInput = document.getElementById("consent");
   const startSubmitBtn = startForm.querySelector("button[type=submit]");
+  const startError = document.getElementById("start-error");
   const resumeBanner = document.getElementById("resume-banner");
   const resumeProgress = document.getElementById("resume-progress");
   const resumeBtn = document.getElementById("resume-btn");
@@ -79,6 +83,8 @@
 
   const progressCard = document.getElementById("progress-card");
   const saveWarning = document.getElementById("save-warning");
+  const saveWarningNetwork = document.getElementById("save-warning-network");
+  const saveWarningAuth = document.getElementById("save-warning-auth");
   const attemptMeta = document.getElementById("attempt-meta");
   const dominantName = document.getElementById("dominant-name");
   const dominantMask = document.getElementById("dominant-mask");
@@ -117,6 +123,8 @@
   const codeSentNote = document.getElementById("code-sent-note");
   const resendCodeBtn = document.getElementById("resend-code-btn");
   const loginError = document.getElementById("login-error");
+  const loginTitle = document.getElementById("login-title");
+  const loginGateNote = document.getElementById("login-gate-note");
 
   // Espace participant
   const accountTitle = document.getElementById("account-title");
@@ -256,8 +264,9 @@
     postalCodeInput.value = state.postalCode || "";
   }
 
-  startForm.addEventListener("submit", (e) => {
+  startForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    startError.hidden = true;
     const checkedGender = [...genderInputs].find((input) => input.checked);
     const phoneCountry = phoneCountrySelect.value;
     const phoneNational = phoneInput.value.trim();
@@ -286,8 +295,54 @@
     };
     pendingPassword = signupPasswordInput.value;
     saveState();
+
+    // Contrôle d'identité avant les 50 questions : si ces coordonnées
+    // correspondent à un dossier existant, il faut prouver qu'on en est la
+    // titulaire. Le mot de passe saisi juste au-dessus sert de preuve —
+    // pas besoin d'un écran de plus quand il est bon.
+    startSubmitBtn.disabled = true;
+    try {
+      const status = await precheckIdentity();
+      if (status === "auth_required") {
+        openLoginGate(state.email);
+        return;
+      }
+      if (status === "authenticated") await loadSession();
+      if (status === null) {
+        startError.textContent =
+          "Vérification impossible pour le moment. Réessayer dans un instant.";
+        startError.hidden = false;
+        return;
+      }
+    } finally {
+      startSubmitBtn.disabled = false;
+    }
+
     startQuizFromCurrent();
   });
+
+  // Renvoie "new", "authenticated", "auth_required", ou null si le serveur
+  // n'a pas pu répondre. On ne démarre pas le test sur un null : la
+  // passation serait refusée à l'envoi, après 50 questions pour rien.
+  async function precheckIdentity() {
+    try {
+      const res = await fetch("/api/auth/precheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: state.phone,
+          email: state.email,
+          password: pendingPassword,
+        }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => null);
+      return (data && data.status) || null;
+    } catch (err) {
+      console.warn("Vérification d'identité impossible :", err);
+      return null;
+    }
+  }
 
   // Efface l'erreur personnalisée dès que l'utilisateur corrige sa saisie.
   phoneInput.addEventListener("input", () => phoneInput.setCustomValidity(""));
@@ -427,14 +482,23 @@
       const data = await res.json().catch(() => null);
       if (res.ok) {
         state.saveFailed = false;
+        state.saveNeedsAuth = false;
         if (data && typeof data.attemptNumber === "number") {
           state.attemptNumber = data.attemptNumber;
         }
         if (data && Array.isArray(data.history)) {
           state.history = data.history;
         }
+        // Un dossier neuf ouvre sa session à la création : on la charge
+        // pour que l'accès à l'espace fonctionne dans la foulée.
+        if (!session) await loadSession();
       } else {
         state.saveFailed = true;
+        // Le serveur a refusé de rattacher la passation à un dossier dont
+        // l'identité n'est pas prouvée. Normalement filtré avant le test
+        // par /api/auth/precheck ; reste possible si le dossier a été créé
+        // entre-temps, ou depuis un état repris d'une session précédente.
+        state.saveNeedsAuth = !!(data && data.requiresAuth);
         console.warn("Échec de l'enregistrement de la passation :", res.status, data);
       }
     } catch (e) {
@@ -506,6 +570,8 @@
     // Un rapport rejoué vient forcément de la base : l'avertissement ne
     // concerne que la passation qui vient d'être envoyée.
     saveWarning.hidden = isPast || !state.saveFailed;
+    saveWarningAuth.hidden = !state.saveNeedsAuth;
+    saveWarningNetwork.hidden = !!state.saveNeedsAuth;
 
     const attemptNumber = isPast ? attempt.attempt_number : state.attemptNumber;
     const attemptDate = isPast ? new Date(attempt.taken_at) : new Date();
@@ -800,12 +866,70 @@
     if (step !== "verify") loginCodeInput.value = "";
   }
 
+  // Mode « verrou » : on arrive sur l'écran de connexion depuis le
+  // formulaire d'accueil, parce que les coordonnées saisies correspondent à
+  // un dossier existant. Une fois connectée, la personne enchaîne
+  // directement sur le test au lieu de passer par son espace.
+  let loginGate = false;
+
+  function setLoginGate(active) {
+    loginGate = active;
+    loginGateNote.hidden = !active;
+    loginTitle.textContent = active ? "Ce dossier existe déjà" : "Retrouver mes résultats";
+    loginBackBtn.textContent = active ? "Modifier mes coordonnées" : "Retour à l'accueil";
+  }
+
+  function openLoginGate(email) {
+    setLoginGate(true);
+    showLoginStep("password");
+    passwordLoginEmail.value = email || "";
+    passwordLoginPassword.value = "";
+    showScreen("login");
+    passwordLoginPassword.focus();
+  }
+
+  // Après une connexion réussie en mode verrou. Se connecter à un autre
+  // dossier que celui décrit par le formulaire est possible (on ne peut
+  // entrer que chez soi) : dans ce cas le test est rattaché au dossier
+  // réellement ouvert, jamais à celui dont on a saisi les coordonnées.
+  function finishLoginGate() {
+    const p = session.participant;
+    const samePhone = stripPhone(p.phone) === stripPhone(state.phone);
+    const sameEmail = (p.email || "").toLowerCase() === (state.email || "").toLowerCase();
+
+    if (!samePhone && !sameEmail) {
+      const answers = state.answers;
+      hydrateStateFromSession();
+      state.answers = answers;
+      state.attemptNumber = null;
+      window.alert(
+        `Les coordonnées saisies appartiennent à un autre dossier. ` +
+          `Le test sera enregistré sur le dossier de ${p.first_name}.`
+      );
+    }
+
+    // Le dossier existe déjà : son mot de passe ne doit pas être renvoyé.
+    pendingPassword = "";
+    signupPasswordInput.value = "";
+    setLoginGate(false);
+    saveState();
+    startQuizFromCurrent();
+  }
+
+  function stripPhone(phone) {
+    return String(phone || "").replace(/[\s.\-()]/g, "");
+  }
+
   goLoginBtn.addEventListener("click", () => {
+    setLoginGate(false);
     showLoginStep("password");
     showScreen("login");
   });
 
-  loginBackBtn.addEventListener("click", () => showScreen("welcome"));
+  loginBackBtn.addEventListener("click", () => {
+    setLoginGate(false);
+    showScreen("welcome");
+  });
   goCodeBtn.addEventListener("click", () => {
     // L'adresse déjà saisie n'a pas à être retapée.
     if (passwordLoginEmail.value.trim()) loginEmailInput.value = passwordLoginEmail.value.trim();
@@ -835,8 +959,12 @@
         return;
       }
       passwordLoginPassword.value = "";
-      if (await loadSession()) enterAccount();
-      else showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+      if (!(await loadSession())) {
+        showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+        return;
+      }
+      if (loginGate) finishLoginGate();
+      else enterAccount();
     } catch (err) {
       showLoginError("Erreur réseau. Réessayer dans un instant.");
     } finally {
@@ -901,15 +1029,19 @@
         return;
       }
       const loaded = await loadSession();
-      if (loaded) {
-        enterAccount();
-        // Arrivée par code : c'est le moment de proposer un mot de passe
-        // à qui n'en a pas encore, la carte est déjà mise en évidence.
-        if (!session.participant.hasPassword) {
-          accountPasswordCard.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      } else {
+      if (!loaded) {
         showLoginError("Connexion établie mais dossier illisible. Réessayer.");
+        return;
+      }
+      if (loginGate) {
+        finishLoginGate();
+        return;
+      }
+      enterAccount();
+      // Arrivée par code : c'est le moment de proposer un mot de passe
+      // à qui n'en a pas encore, la carte est déjà mise en évidence.
+      if (!session.participant.hasPassword) {
+        accountPasswordCard.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     } catch (err) {
       showLoginError("Erreur réseau. Réessayer dans un instant.");
@@ -925,6 +1057,7 @@
     clearState();
     startForm.reset();
     applyGenderTheme("");
+    setLoginGate(false);
     showLoginStep("password");
     loginEmailInput.value = "";
     passwordLoginEmail.value = "";
