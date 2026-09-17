@@ -1,6 +1,5 @@
 const { supabaseRequest } = require("./_lib/supabase");
 const { computeScores, isValidAnswers, describeAnswersProblem } = require("./_lib/scoring");
-const { hashPassword, isValidPassword } = require("./_lib/password");
 const { createParticipantSessionCookie, getParticipantId } = require("./_lib/auth");
 
 // Volontairement permissif : aligné sur la validation native du navigateur
@@ -12,9 +11,10 @@ function isValidEmail(email) {
   return typeof email === "string" && /^[^\s@]+@[^\s@]+$/.test(email);
 }
 
-// Le téléphone est l'identifiant stable du participant : on normalise en
-// retirant espaces/points/tirets/parenthèses pour que "06 12 34 56 78" et
-// "0612345678" désignent la même personne.
+// Le téléphone n'identifie plus un dossier (migration 006) mais reste
+// stocké sous une forme stable : on retire espaces, points, tirets et
+// parenthèses pour que « 06 12 34 56 78 » et « 0612345678 » se présentent
+// de la même façon dans le tableau de bord.
 function normalizePhone(phone) {
   return (phone || "").replace(/[\s.\-()]/g, "");
 }
@@ -74,7 +74,6 @@ module.exports = async (req, res) => {
   const postalCode = ((body && body.postalCode) || "").trim();
   const answers = body && body.answers;
   const consent = body && body.consent === true;
-  const password = String((body && body.password) || "");
 
   const validationErrors = [];
   if (!body) validationErrors.push("corps de requête vide ou illisible");
@@ -101,29 +100,23 @@ module.exports = async (req, res) => {
   try {
     const now = new Date().toISOString();
 
-    // Un dossier peut être reconnu par son téléphone (clé d'identité) ou
-    // par son e-mail : les deux doivent être verrouillés. Créer un second
-    // dossier sur l'adresse de quelqu'un d'autre rendrait de plus la
-    // connexion ambiguë pour les deux (voir migration 005).
-    let existing = await supabaseRequest(
-      `/participants?phone=eq.${encodeURIComponent(phone)}&select=id`
+    // L'e-mail est la clé d'identité depuis la migration 006. Le téléphone
+    // reste collecté et obligatoire, mais n'identifie plus un dossier :
+    // plusieurs personnes d'un même foyer peuvent donner le même numéro.
+    const existing = await supabaseRequest(
+      `/participants?email=eq.${encodeURIComponent(email)}&select=id`
     );
-    if (!existing || existing.length === 0) {
-      existing = await supabaseRequest(
-        `/participants?email=eq.${encodeURIComponent(email)}&select=id`
-      );
-    }
 
     // Le contrôle décisif : rattacher une passation à un dossier existant
     // — et en recevoir l'historique — exige d'avoir prouvé qu'on en est le
-    // titulaire. Sans lui, saisir le téléphone ou l'e-mail d'une autre
-    // personne suffisait à lire tout son suivi psychologique. Le contrôle
-    // équivalent côté navigateur (/api/auth/precheck, à la validation du
-    // formulaire) n'est qu'un confort : une requête forgée l'ignore, celui-ci
-    // ne se contourne pas.
+    // titulaire. Sans lui, saisir l'e-mail d'une autre personne suffisait à
+    // lire tout son suivi psychologique. Le contrôle équivalent côté
+    // navigateur (/api/auth/precheck, à la validation du formulaire) n'est
+    // qu'un confort : une requête forgée l'ignore, celui-ci ne se contourne
+    // pas.
     if (existing && existing.length > 0 && getParticipantId(req) !== existing[0].id) {
       res.status(403).json({
-        error: "Un dossier existe déjà pour ces coordonnées. Connexion requise.",
+        error: "Un dossier existe déjà pour cette adresse e-mail. Connexion requise.",
         requiresAuth: true,
       });
       return;
@@ -131,11 +124,8 @@ module.exports = async (req, res) => {
 
     let participantId;
     if (existing && existing.length > 0) {
-      // Dossier existant : on met à jour le profil, mais JAMAIS le mot de
-      // passe, même si la requête en contient un. Une session prouve que
-      // la personne est bien la titulaire du dossier, pas qu'elle a voulu
-      // en changer le mot de passe — cela passe obligatoirement par
-      // /api/auth/set-password.
+      // Dossier existant : on met à jour le profil, mais jamais le mot de
+      // passe — cela passe obligatoirement par /api/auth/set-password.
       participantId = existing[0].id;
       await supabaseRequest(`/participants?id=eq.${participantId}`, {
         method: "PATCH",
@@ -143,18 +133,21 @@ module.exports = async (req, res) => {
           gender,
           first_name: firstName,
           last_name: lastName,
-          email,
+          phone,
           city: city || null,
           postal_code: postalCode || null,
           last_test_at: now,
+          // Les deux compteurs de rappel repartent de zéro : la personne
+          // vient de repasser le test, elle n'a plus rien à relancer.
           reminder_sent_at: null,
+          reminder_1m_sent_at: null,
         }),
       });
     } else {
-      // Dossier neuf : la personne qui le crée en définit le mot de passe.
-      const passwordFields = isValidPassword(password)
-        ? { password_hash: await hashPassword(password), password_set_at: now }
-        : {};
+      // Dossier neuf. Aucun mot de passe n'est demandé au formulaire : une
+      // personne qui vient simplement passer le test n'a pas à s'inventer
+      // un compte. Elle en définira un depuis son espace, par le code reçu
+      // par e-mail, le jour où elle voudra consulter son suivi.
       const created = await supabaseRequest(`/participants`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -167,7 +160,6 @@ module.exports = async (req, res) => {
           city: city || null,
           postal_code: postalCode || null,
           last_test_at: now,
-          ...passwordFields,
         }),
       });
       participantId = created[0].id;

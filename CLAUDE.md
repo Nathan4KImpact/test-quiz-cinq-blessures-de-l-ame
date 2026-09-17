@@ -62,22 +62,28 @@ quelle passation, import/export CSV, impression PDF, suppression.
   (tous les dossiers antérieurs n'en ont pas) et en changer quand il
   est oublié. Un seul endpoint couvre les deux, `set-password`, qui
   exige une session déjà ouverte.
-- **Passer le test exige aussi de s'authentifier**, dès lors que les
-  coordonnées saisies correspondent à un dossier déjà en base. Le
-  formulaire d'accueil demandait déjà un mot de passe : il sert de
-  preuve (`api/_auth/precheck.js`), et l'écran de connexion ne
-  s'interpose que s'il ne convient pas. Un dossier neuf n'est jamais
-  bloqué, et sa session s'ouvre à sa création.
+- **Passer le test exige aussi de s'authentifier**, dès lors que
+  l'adresse saisie correspond à un dossier déjà en base
+  (`api/_auth/precheck.js` puis le 403 de `/api/submit`). Un dossier neuf
+  n'est jamais bloqué, et sa session s'ouvre à sa création.
+- **Aucun mot de passe n'est demandé pour passer le test.** Il se définit
+  depuis l'espace personnel, le jour où la personne veut revenir consulter
+  son suivi. Conséquence assumée : un participant qui revient et n'a jamais
+  créé d'espace passe par le code e-mail. La friction retirée profite au
+  primo-arrivant, qui est le cas visé ; celui qui revient a un dossier à
+  protéger.
 
 ### Modèle de données
 
 Deux tables Postgres seulement :
 
-- `participants` — une ligne par personne. **Clé d'identité stable =
-  téléphone normalisé** (pas l'email, qui peut changer). `email`
-  obligatoire pour le contact, `gender` en check `('homme','femme')`,
-  `city`/`postal_code` facultatifs, `created_at`/`last_test_at`
-  /`reminder_sent_at` pour le suivi.
+- `participants` — une ligne par personne. **Clé d'identité = e-mail,
+  unique** (migration 006). Le téléphone reste obligatoire mais n'est plus
+  unique : plusieurs personnes d'un même foyer peuvent donner le même
+  numéro. `gender` en check `('homme','femme')`,
+  `city`/`postal_code` facultatifs, `created_at`/`last_test_at` et deux
+  colonnes de relance (`reminder_1m_sent_at`, `reminder_sent_at`), remises
+  à null à chaque nouvelle passation.
 - `attempts` — une ligne par passation, FK vers `participants` avec
   **`ON DELETE CASCADE`** (supprimer une personne emporte ses tests),
   `attempt_number` incrémental par participant (index unique composite
@@ -109,7 +115,7 @@ js/app.js                 Logique publique (état, scoring local, submit, rendu,
 js/admin.js               Logique admin
 sql/schema.sql             Schéma pour installation neuve
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
-api/submit.js              Enregistre une passation (validation + upsert par téléphone)
+api/submit.js              Enregistre une passation (validation + upsert par e-mail)
 api/auth/[action].js       Route unique de l'authentification (voir plafond Vercel)
 api/_auth/login.js         Connexion e-mail + mot de passe (chemin principal)
 api/_auth/precheck.js      Contrôle d'identité à la validation du formulaire
@@ -124,11 +130,12 @@ api/admin/login.js         Auth admin (compare le mot de passe, pose le cookie)
 api/admin/logout.js        Efface le cookie
 api/admin/participants.js  Liste + dernier résultat de chaque participant
 api/admin/participant.js   GET détail + historique / DELETE participant
-api/cron/reminders.js      Cron : rappel 6 mois via Resend (optionnel)
+api/cron/reminders.js      Cron : rappels 1 mois et 6 mois via Resend (optionnel)
 api/_lib/supabase.js       Client REST minimaliste vers PostgREST
 api/_lib/scoring.js        Recalcul serveur des scores + validation
 api/_lib/auth.js           Cookie signé HMAC, comparaison timing-safe
 vercel.json                cleanUrls + définition du cron
+tests/                     Mock d'API + parcours Playwright — `bash tests/run.sh`
 ```
 
 ### Variables d'environnement Vercel
@@ -419,6 +426,46 @@ de chaque cellule à cinq largeurs de fenêtre, et vérifie qu'aucune boîte
 n'en recouvre une autre. Vérifié en remettant l'ancien CSS : le test
 échoue bien aux cinq largeurs.
 
+### Le blur d'un champ précède le clic sur son bouton
+
+**Symptôme** : le bouton « afficher le mot de passe » révélait bien la
+saisie, mais un second clic ne la remasquait jamais.
+**Cause** : appuyer sur le bouton fait d'abord perdre le focus au champ. Le
+gestionnaire de `blur` — posé pour remasquer quand on quitte le champ —
+repassait en `password`, puis le `click` voyait un champ masqué et
+rebasculait en clair. Deux comportements corrects annulés l'un par l'autre.
+**Correctif** : `mousedown` + `preventDefault()` sur le bouton, pour que le
+champ ne perde pas le focus. Le `click` suit normalement.
+**Leçon** : dès qu'un bouton agit sur un champ qui a son propre
+gestionnaire de `blur`, l'ordre des événements fait partie du problème.
+
+### Un max-height chiffré finit toujours par rogner quelque chose
+
+**Symptôme** (signalé par un utilisateur sur son téléphone) : le texte des
+fiches de blessure était coupé net, sans possibilité de faire défiler.
+**Cause** : `.accordion-item.open .accordion-body { max-height: 900px }` avec
+`overflow: hidden`. Sur un écran large le contenu tenait ; sur un téléphone,
+le même texte occupe deux à trois fois plus de hauteur et dépassait le
+plafond. Ce qui dépasse est simplement invisible, et rien ne l'annonce.
+**Correctif** : animer `grid-template-rows: 0fr → 1fr` sur une grille, avec
+un enfant unique qui porte l'`overflow`. La piste se cale sur la hauteur
+réelle du contenu, quelle qu'elle soit — il n'y a plus de valeur à deviner.
+**Détection** : comparer `scrollHeight` de l'enveloppe interne à la hauteur
+de la boîte, en 390 px de large. Un test qui vérifie la présence du texte
+dans le DOM passe : le texte *est* là, il n'est simplement pas atteignable.
+
+### Un sélecteur CSS qui oublie un type d'input
+
+**Symptôme** : à l'inscription, le champ mot de passe était visiblement plus
+mince que le champ e-mail juste au-dessus.
+**Cause** : la règle listait `input[type="text"]`, `[type="email"]` et
+`[type="tel"]` — pas `[type="password"]`, qui gardait donc le style par
+défaut du navigateur. Personne ne l'avait vu parce que le champ fonctionnait.
+**Mesure** : 19 px de haut contre 53 px pour ses voisins.
+**Leçon** : une liste de sélecteurs par type est une liste à maintenir. Un
+test qui compare la hauteur rendue de deux champs voisins l'attrape ; une
+relecture du CSS, rarement.
+
 ### Envs Vercel « Shared » vs projet
 
 **Symptôme** : `ADMIN_PASSWORD n'est pas configuré côté serveur`
@@ -443,7 +490,7 @@ partage entre systèmes non liés.
 | Décision | Retenue | Raison |
 |---|---|---|
 | Backend BDD | Supabase (Postgres) | Vs Airtable : RLS, EU, portabilité, SQL |
-| Identifiant de suivi | Téléphone normalisé | L'email peut changer plus souvent |
+| Identifiant de suivi | ~~Téléphone~~ → **E-mail** (migration 006) | Le téléphone se partage dans un foyer ; il bloquait un enfant voulant passer le test avec le numéro d'un parent |
 | Rapport détaillé | Dominante + modérée seulement | Éviter la surcharge cognitive |
 | Ordre du sélecteur de genre | Femme (Leaman) d'abord | Public prioritaire du test |
 | Séparateur d'ex-æquo | ` - ` (au lieu de ` & `) | Plus neutre visuellement |

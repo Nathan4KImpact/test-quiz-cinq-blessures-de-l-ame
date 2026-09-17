@@ -110,7 +110,6 @@
   const accountLogoutBtn = document.getElementById("account-logout");
   const goLoginBtn = document.getElementById("go-login-btn");
   const loginBackBtn = document.getElementById("login-back-btn");
-  const signupPasswordInput = document.getElementById("signup-password");
   const passwordLoginForm = document.getElementById("password-login-form");
   const passwordLoginEmail = document.getElementById("password-login-email");
   const passwordLoginPassword = document.getElementById("password-login-password");
@@ -142,6 +141,46 @@
   const accountPasswordInput = document.getElementById("account-password");
   const accountPasswordConfirm = document.getElementById("account-password-confirm");
   const accountPasswordMsg = document.getElementById("account-password-msg");
+
+  // ---------- Afficher / masquer un mot de passe ----------
+  // Un mot de passe qu'on ne peut pas relire se saisit mal, surtout au
+  // clavier d'un téléphone. Le champ retombe en « masqué » dès qu'il perd
+  // le focus : laisser un mot de passe en clair sur un écran posé sur une
+  // table n'aide personne.
+  document.querySelectorAll(".password-reveal").forEach((btn) => {
+    const input = btn.parentElement.querySelector("input");
+    if (!input) return;
+
+    const setVisible = (visible) => {
+      input.type = visible ? "text" : "password";
+      btn.setAttribute("aria-pressed", visible ? "true" : "false");
+      btn.setAttribute(
+        "aria-label",
+        visible ? "Masquer le mot de passe" : "Afficher le mot de passe"
+      );
+    };
+
+    // Sans cela, appuyer sur le bouton fait d'abord perdre le focus au
+    // champ : le gestionnaire de blur remasque, puis le clic rebascule en
+    // clair — le bouton semble alors ne jamais remasquer.
+    btn.addEventListener("mousedown", (e) => e.preventDefault());
+
+    btn.addEventListener("click", () => {
+      const willShow = input.type === "password";
+      setVisible(willShow);
+      // Le focus revient au champ, au bon endroit : sans cela, basculer
+      // le type renvoie le curseur au début de la saisie.
+      const pos = input.value.length;
+      input.focus();
+      try {
+        input.setSelectionRange(pos, pos);
+      } catch (e) {
+        /* certains navigateurs refusent sur un champ password */
+      }
+    });
+
+    input.addEventListener("blur", () => setVisible(false));
+  });
 
   // ---------- Persistence ----------
   function saveState() {
@@ -293,7 +332,6 @@
       city: cityInput.value.trim(),
       postalCode: postalCodeInput.value.trim(),
     };
-    pendingPassword = signupPasswordInput.value;
     saveState();
 
     // Contrôle d'identité avant les 50 questions : si ces coordonnées
@@ -329,11 +367,7 @@
       const res = await fetch("/api/auth/precheck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: state.phone,
-          email: state.email,
-          password: pendingPassword,
-        }),
+        body: JSON.stringify({ email: state.email }),
       });
       if (!res.ok) return null;
       const data = await res.json().catch(() => null);
@@ -351,12 +385,6 @@
     showScreen("quiz");
     renderQuestion(state.currentIndex);
   }
-
-  // Mot de passe choisi au formulaire d'accueil. Délibérément gardé hors
-  // de `state` : celui-ci est sérialisé dans localStorage à chaque
-  // réponse, et un mot de passe en clair y resterait sur l'appareil —
-  // partagé ou non — longtemps après la fin du test.
-  let pendingPassword = "";
 
   // ---------- Quiz screen ----------
   let isTransitioning = false;
@@ -463,10 +491,6 @@
       postalCode: state.postalCode,
       answers: state.answers,
       consent: true,
-      // Ignoré côté serveur si le téléphone correspond déjà à un dossier :
-      // seul /api/auth/set-password, qui exige une session prouvée, peut
-      // changer le mot de passe d'un dossier existant.
-      password: pendingPassword,
     };
 
     try {
@@ -508,9 +532,6 @@
       state.saveFailed = true;
       console.warn("Enregistrement de la passation impossible :", e);
     }
-    // Le mot de passe a fini son voyage : on ne le garde pas en mémoire.
-    pendingPassword = "";
-    signupPasswordInput.value = "";
     saveState();
   }
 
@@ -783,7 +804,11 @@
       const g = state.gender;
       const body = document.createElement("div");
       body.className = "accordion-body";
-      body.innerHTML = `
+      // L'enveloppe interne est ce que la grille rogne pendant
+      // l'animation ; sans elle, le dépliement ne s'anime pas.
+      const inner = document.createElement("div");
+      inner.className = "accordion-inner";
+      inner.innerHTML = `
         <h4>Besoins clés</h4>
         <p>${genderize(r.wound.needs, g)}</p>
         <h4>Comprendre</h4>
@@ -793,12 +818,16 @@
         <h4>3 actions pour se repositionner (dès cette semaine)</h4>
         <ol>${r.wound.actions.map((a) => `<li>${genderize(a, g)}</li>`).join("")}</ol>
       `;
+      body.appendChild(inner);
 
       item.appendChild(toggle);
       item.appendChild(body);
       woundAccordion.appendChild(item);
     });
   }
+
+  // Adresse en copie cachée des demandes de séance.
+  const COACHING_BCC = "bouangaesther9@gmail.com";
 
   function setupBookingLink(dominant, firstName) {
     const woundLabel = dominant.map((d) => `${d.wound.name} (masque ${d.wound.mask})`).join(" & ");
@@ -815,9 +844,14 @@
       "Merci !",
     ].join("\n");
 
+    // La demande arrive sur la boîte de l'association ; Esther la reçoit en
+    // copie cachée. À noter : un « cci » de lien mailto n'a rien de secret,
+    // le logiciel de messagerie du participant affiche le champ et peut le
+    // modifier. C'est une commodité d'acheminement, pas une confidentialité.
     bookingLink.href =
-      "mailto:bouangaesther9@gmail.com" +
-      `?subject=${encodeURIComponent(subject)}` +
+      "mailto:bienvenue@vieflorissante.com" +
+      `?bcc=${encodeURIComponent(COACHING_BCC)}` +
+      `&subject=${encodeURIComponent(subject)}` +
       `&body=${encodeURIComponent(body)}`;
   }
 
@@ -876,7 +910,7 @@
     loginGate = active;
     loginGateNote.hidden = !active;
     loginTitle.textContent = active ? "Ce dossier existe déjà" : "Retrouver mes résultats";
-    loginBackBtn.textContent = active ? "Modifier mes coordonnées" : "Retour à l'accueil";
+    loginBackBtn.textContent = active ? "Modifier mon adresse" : "Retour à l'accueil";
   }
 
   function openLoginGate(email) {
@@ -894,30 +928,25 @@
   // réellement ouvert, jamais à celui dont on a saisi les coordonnées.
   function finishLoginGate() {
     const p = session.participant;
-    const samePhone = stripPhone(p.phone) === stripPhone(state.phone);
     const sameEmail = (p.email || "").toLowerCase() === (state.email || "").toLowerCase();
 
-    if (!samePhone && !sameEmail) {
+    // On ne peut entrer que chez soi, mais rien n'oblige à se connecter au
+    // dossier dont on vient de saisir l'adresse. Dans ce cas le test est
+    // rattaché au dossier réellement ouvert — jamais à celui visé.
+    if (!sameEmail) {
       const answers = state.answers;
       hydrateStateFromSession();
       state.answers = answers;
       state.attemptNumber = null;
       window.alert(
-        `Les coordonnées saisies appartiennent à un autre dossier. ` +
+        `L'adresse saisie appartient à un autre dossier. ` +
           `Le test sera enregistré sur le dossier de ${p.first_name}.`
       );
     }
 
-    // Le dossier existe déjà : son mot de passe ne doit pas être renvoyé.
-    pendingPassword = "";
-    signupPasswordInput.value = "";
     setLoginGate(false);
     saveState();
     startQuizFromCurrent();
-  }
-
-  function stripPhone(phone) {
-    return String(phone || "").replace(/[\s.\-()]/g, "");
   }
 
   goLoginBtn.addEventListener("click", () => {
@@ -1083,7 +1112,6 @@
       // Sans cet effacement, un rechargement proposerait de reprendre un
       // test que la personne vient justement d'abandonner.
       clearState();
-      pendingPassword = "";
     }
     enterAccount();
   });

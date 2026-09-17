@@ -88,14 +88,11 @@
           </select>
           <input type="tel" id="phone" name="phone" autocomplete="tel-national" placeholder="6 12 34 56 78" maxlength="20" required />
         </div>
-        <p class="field-hint">L'indicatif du pays est obligatoire : il permet de retrouver ton test si tu le repasses plus tard.</p>
+        <p class="field-hint">L'indicatif du pays est obligatoire. Plusieurs personnes d'un même foyer peuvent donner le même numéro.</p>
 
         <label for="email">Email</label>
         <input type="email" id="email" name="email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
-
-        <label for="signup-password">Mot de passe</label>
-        <input type="password" id="signup-password" name="signup-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
-        <p class="field-hint">Il permettra de revenir consulter l'évolution des résultats. Pour un test déjà passé avec ce numéro, le mot de passe existant reste inchangé.</p>
+        <p class="field-hint">C'est elle qui relie tes tests entre eux : indique une adresse personnelle, que tu retrouveras dans six mois.</p>
 
         <div class="form-row">
           <div class="form-col">
@@ -140,9 +137,9 @@
       <!-- Affiché quand la connexion est exigée pour continuer un test :
            des coordonnées correspondent à un dossier déjà en base. -->
       <p class="intro" id="login-gate-note" hidden>
-        Un test a déjà été passé avec ces coordonnées. Pour continuer, il
-        faut se connecter à ce dossier : c'est ce qui garantit que le suivi
-        de chacun ne peut être consulté que par la personne concernée.
+        Un test a déjà été passé avec cette adresse e-mail. Pour continuer,
+        il faut se connecter à ce dossier : c'est ce qui garantit que le
+        suivi de chacun ne peut être consulté que par la personne concernée.
       </p>
 
       <!-- Chemin principal : e-mail + mot de passe -->
@@ -151,7 +148,10 @@
         <input type="email" id="password-login-email" name="password-login-email" autocomplete="email" placeholder="toi@exemple.com" maxlength="120" required />
 
         <label for="password-login-password">Mot de passe</label>
-        <input type="password" id="password-login-password" name="password-login-password" autocomplete="current-password" maxlength="200" required />
+        <div class="password-field">
+          <input type="password" id="password-login-password" name="password-login-password" autocomplete="current-password" maxlength="200" required />
+          <button type="button" class="password-reveal" aria-label="Afficher le mot de passe" aria-pressed="false"></button>
+        </div>
 
         <button type="submit" class="btn btn-primary">Me connecter</button>
         <p class="section-note">
@@ -237,9 +237,15 @@
         <div id="account-password-body" hidden>
           <form id="account-password-form">
             <label for="account-password">Nouveau mot de passe</label>
-            <input type="password" id="account-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
+            <div class="password-field">
+              <input type="password" id="account-password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" maxlength="200" required />
+              <button type="button" class="password-reveal" aria-label="Afficher le mot de passe" aria-pressed="false"></button>
+            </div>
             <label for="account-password-confirm">Confirmation</label>
-            <input type="password" id="account-password-confirm" autocomplete="new-password" minlength="8" maxlength="200" required />
+            <div class="password-field">
+              <input type="password" id="account-password-confirm" autocomplete="new-password" minlength="8" maxlength="200" required />
+              <button type="button" class="password-reveal" aria-label="Afficher le mot de passe" aria-pressed="false"></button>
+            </div>
             <button type="submit" class="btn btn-primary">Enregistrer</button>
           </form>
           <p id="account-password-msg" class="form-error" hidden></p>
@@ -296,8 +302,8 @@
           d'évolution.
         </p>
         <p id="save-warning-auth" hidden>
-          Un dossier existe déjà pour ces coordonnées et il n'a pas été possible
-          de vérifier qu'il s'agit du vôtre. Ces résultats s'affichent, mais ils
+          Un dossier existe déjà pour cette adresse e-mail et il n'a pas été
+          possible de vérifier qu'il s'agit du vôtre. Ces résultats s'affichent, mais ils
           n'ont pas été rattachés à ce dossier : le suivi de chacun n'est
           consultable que par la personne concernée.
         </p>

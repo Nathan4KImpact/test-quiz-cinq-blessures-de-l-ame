@@ -19,26 +19,31 @@ rapport personnalisé, et permet un suivi dans le temps.
   les réponses
 - **Homme ou Femme** : palette adaptée (rose ↔ bleu) et
   toutes les formulations « accepté(e) » accordées au genre choisi
-- Recueille prénom, nom, téléphone (obligatoire — sert d'identifiant pour
-  relier les tests successifs), email (obligatoire, pour le contact et les
-  rappels), ville et code postal (facultatifs), avec consentement explicite
+- Recueille prénom, nom, téléphone (obligatoire, pour le contact), email
+  (obligatoire — **c'est lui qui relie les tests successifs d'une même
+  personne**), ville et code postal (facultatifs), avec consentement
+  explicite. Aucun mot de passe n'est demandé pour passer le test : il se
+  définit depuis l'espace personnel, quand la personne veut y revenir
 - Calcule la blessure dominante (et les ex æquo) et n'explique en détail que
   celle-ci — plus la blessure « modérée » qui suit au classement quand il n'y
   a pas d'ex æquo — pour une première lecture non écrasante
 - Chaque passation est enregistrée (base Supabase) et reliée aux tests
-  précédents de la même personne via son téléphone, pour suivre son évolution
-- **Un test ne peut être rattaché qu'à son propre dossier** : si les
-  coordonnées saisies correspondent à un dossier déjà en base, il faut s'y
-  connecter avant de commencer. Le mot de passe demandé au formulaire suffit
-  le plus souvent ; sinon l'écran de connexion prend le relais (mot de passe
-  ou code à 6 chiffres par e-mail)
+  précédents de la même personne via son adresse e-mail, pour suivre son
+  évolution. Plusieurs personnes d'un même foyer peuvent donner le même
+  numéro de téléphone sans que leurs dossiers se mélangent
+- **Un test ne peut être rattaché qu'à son propre dossier** : si l'adresse
+  e-mail saisie correspond à un dossier déjà en base, l'écran de connexion
+  s'interpose avant le test (mot de passe, ou code à 6 chiffres par e-mail
+  pour qui n'en a pas encore), puis enchaîne directement sur les questions.
+  Un dossier nouveau n'est jamais bloqué
 - **Interface admin** protégée par mot de passe : liste filtrable de tous les
   participants (blessure dominante & modérée en aperçu), et pour chacun un
   graphique d'évolution des 5 blessures dans le temps (6 mois / 1 an / 3 ans
   / 5 ans / tout) avec les zones de sévérité en fond. Chaque test passé peut
   être ouvert pour voir le rapport complet tel que l'utilisateur l'a vu.
-- Rappel automatique par e-mail si une personne n'a pas refait le test depuis
-  6 mois (optionnel, via Resend)
+- Rappels automatiques par e-mail après 1 mois puis après 6 mois sans
+  nouveau test (optionnels, via Resend). Repasser le test remet les deux
+  compteurs à zéro
 - Bouton pour réserver une séance de coaching (e-mail pré-rempli) et bouton
   pour imprimer / enregistrer le résultat en PDF (verset complet inclus)
 - Interface responsive (mobile-first)
@@ -77,16 +82,16 @@ api/admin/login.js        Authentification admin (mot de passe → cookie signé
 api/admin/logout.js       Déconnexion admin
 api/admin/participants.js Liste de tous les participants + dernier résultat
 api/admin/participant.js  Détail d'un participant + historique de ses passations
-api/cron/reminders.js     Tâche planifiée : e-mail de rappel après 6 mois d'inactivité
+api/cron/reminders.js     Tâche planifiée : rappels après 1 mois puis 6 mois
 api/_lib/                 Petits utilitaires partagés (Supabase REST, scoring, auth)
+tests/                    Mock d'API + parcours Playwright — `bash tests/run.sh`
 ```
 
 Aucune réponse n'est jamais visible par un tiers autre que toi : la base
 Supabase est verrouillée (RLS activé, aucune policy publique), seules les
 fonctions serverless — via une clé secrète côté serveur — peuvent y accéder.
 
-Côté participant, connaître un numéro de téléphone ou une adresse e-mail ne
-donne accès à rien : `/api/submit` répond **403** s'il faudrait rattacher la
+Côté participant, connaître une adresse e-mail ne donne accès à rien : `/api/submit` répond **403** s'il faudrait rattacher la
 passation à un dossier existant sans session prouvant qu'on en est le
 titulaire. Le contrôle équivalent côté navigateur (`/api/auth/precheck`, à la
 validation du formulaire) évite seulement de faire répondre 50 questions pour
@@ -119,6 +124,12 @@ contourne pas.
        — ajoute le mot de passe participant (colonnes `password_hash`
        et `password_set_at`, laissées vides pour les dossiers
        existants)
+     - [`006_email_identity_and_1m_reminder.sql`](sql/migrations/006_email_identity_and_1m_reminder.sql)
+       — **fait de l'e-mail la clé d'identité** (unique) et retire
+       l'unicité du téléphone, puis ajoute la colonne du rappel à
+       1 mois. Entièrement dans une transaction : elle **s'arrête sans
+       rien modifier** si deux dossiers partagent une adresse, en les
+       listant, car les fusionner est un arbitrage humain
 3. Dans **Project Settings → API**, relever :
    - `Project URL` → deviendra `SUPABASE_URL`
    - `service_role` (clé secrète, **jamais** la clé `anon`) → deviendra
@@ -212,3 +223,24 @@ python3 -m http.server 8000
 Pour tester les fonctions serverless (`api/`) en local, utiliser la
 [Vercel CLI](https://vercel.com/docs/cli) : `vercel dev` (nécessite les
 mêmes variables d'environnement dans un fichier `.env.local`).
+
+## Tests
+
+```bash
+bash tests/run.sh
+```
+
+Aucune dépendance à installer : `tests/mock-server.js` rejoue l'API sur une
+fausse base en mémoire, et les parcours pilotent un vrai navigateur via
+Playwright. Chaque parcours repart d'un mock fraîchement démarré — la fausse
+base est mutable, et sans cette remise à zéro une suite échouerait selon ce
+qui a tourné avant elle.
+
+Les parcours tournent en 390 × 844 px, la taille d'un téléphone : c'est là
+que se voient les défauts d'affichage, une fenêtre large les masque. Plusieurs
+assertions mesurent la **géométrie réelle** (hauteur d'un champ, texte rogné
+par un conteneur) plutôt que la présence du texte dans le DOM — un test
+fonctionnel passe très bien sur un contenu invisible ou coupé.
+
+Le mock doit rester fidèle au serveur : un mock plus permissif que la
+production valide un comportement qui n'existe pas.
