@@ -57,6 +57,46 @@ async function parseBody(req) {
   }
 }
 
+// Met à jour le profil et remet à zéro les compteurs de rappel. Au pire
+// effort : la passation est déjà enregistrée à ce stade, et une écriture
+// de confort ne doit pas la faire échouer.
+//
+// Le repli sans les colonnes de rappel couvre une base où la migration 006
+// n'a pas été jouée : PostgREST rejette alors toute la requête pour une
+// colonne inconnue. Plutôt que de perdre aussi la mise à jour du profil,
+// on réessaie sans elles — et on le dit très fort dans les logs.
+async function majProfil(participantId, champs) {
+  const avecRappels = {
+    ...champs,
+    reminder_sent_at: null,
+    reminder_1m_sent_at: null,
+  };
+  try {
+    await supabaseRequest(`/participants?id=eq.${participantId}`, {
+      method: "PATCH",
+      body: JSON.stringify(avecRappels),
+    });
+    return;
+  } catch (err) {
+    console.error("submit: mise à jour du profil refusée", err);
+  }
+
+  try {
+    await supabaseRequest(`/participants?id=eq.${participantId}`, {
+      method: "PATCH",
+      body: JSON.stringify(champs),
+    });
+    console.error(
+      "submit: profil mis à jour SANS les compteurs de rappel. " +
+        "La migration 006 n'a probablement pas été exécutée sur cette base " +
+        "(colonne reminder_1m_sent_at). Les relances resteront incohérentes " +
+        "tant qu'elle ne l'est pas."
+    );
+  } catch (err) {
+    console.error("submit: profil non mis à jour, la passation est tout de même enregistrée", err);
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Méthode non autorisée." });
@@ -123,26 +163,9 @@ module.exports = async (req, res) => {
     }
 
     let participantId;
-    if (existing && existing.length > 0) {
-      // Dossier existant : on met à jour le profil, mais jamais le mot de
-      // passe — cela passe obligatoirement par /api/auth/set-password.
+    const dossierExistant = !!(existing && existing.length > 0);
+    if (dossierExistant) {
       participantId = existing[0].id;
-      await supabaseRequest(`/participants?id=eq.${participantId}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          gender,
-          first_name: firstName,
-          last_name: lastName,
-          phone,
-          city: city || null,
-          postal_code: postalCode || null,
-          last_test_at: now,
-          // Les deux compteurs de rappel repartent de zéro : la personne
-          // vient de repasser le test, elle n'a plus rien à relancer.
-          reminder_sent_at: null,
-          reminder_1m_sent_at: null,
-        }),
-      });
     } else {
       // Dossier neuf. Aucun mot de passe n'est demandé au formulaire : une
       // personne qui vient simplement passer le test n'a pas à s'inventer
@@ -177,6 +200,11 @@ module.exports = async (req, res) => {
 
     const { scaled, dominant } = computeScores(answers);
 
+    // La passation part AVANT la mise à jour du profil. Ce sont les 50
+    // réponses qui sont irremplaçables : si l'écriture du profil échoue,
+    // la personne ne doit pas perdre son test pour autant. L'ordre inverse
+    // a coûté des passations en production — un profil qui ne s'écrivait
+    // pas faisait échouer tout l'enregistrement.
     await supabaseRequest(`/attempts`, {
       method: "POST",
       headers: { Prefer: "return=minimal" },
@@ -192,6 +220,18 @@ module.exports = async (req, res) => {
         answers,
       }),
     });
+
+    if (dossierExistant) {
+      await majProfil(participantId, {
+        gender,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        city: city || null,
+        postal_code: postalCode || null,
+        last_test_at: now,
+      });
+    }
 
     // Historique complet de cette personne, renvoyé avec le résultat pour
     // qu'elle puisse visualiser son évolution sur l'écran de résultats.

@@ -826,7 +826,8 @@
     });
   }
 
-  // Adresse en copie cachée des demandes de séance.
+  // Destinataires des demandes de séance.
+  const COACHING_TO = "bienvenue@vieflorissante.com";
   const COACHING_BCC = "bouangaesther9@gmail.com";
 
   function setupBookingLink(dominant, firstName) {
@@ -849,10 +850,27 @@
     // le logiciel de messagerie du participant affiche le champ et peut le
     // modifier. C'est une commodité d'acheminement, pas une confidentialité.
     bookingLink.href =
-      "mailto:bienvenue@vieflorissante.com" +
+      `mailto:${COACHING_TO}` +
       `?bcc=${encodeURIComponent(COACHING_BCC)}` +
       `&subject=${encodeURIComponent(subject)}` +
       `&body=${encodeURIComponent(body)}`;
+  }
+
+  // Repli pour les ordinateurs sans logiciel de messagerie associé.
+  const copyBookingEmail = document.getElementById("copy-booking-email");
+  if (copyBookingEmail) {
+    copyBookingEmail.addEventListener("click", async () => {
+      const initial = copyBookingEmail.textContent;
+      try {
+        await navigator.clipboard.writeText(COACHING_TO);
+        copyBookingEmail.textContent = "adresse copiée";
+      } catch (e) {
+        // Presse-papiers refusé (contexte non sécurisé, permission) :
+        // l'adresse reste lisible juste à côté, on ne ment pas.
+        copyBookingEmail.textContent = "copie impossible";
+      }
+      window.setTimeout(() => (copyBookingEmail.textContent = initial), 2500);
+    });
   }
 
   printBtn.addEventListener("click", () => window.print());
