@@ -566,6 +566,36 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 
 ---
 
+## 7 bis. Rituels convenus avec l'user
+
+### Après chaque merge de PR : mettre à jour la mémoire partagée
+
+**Règle posée le 18/09/2026.** À chaque fois qu'une PR est mergée sur
+`main`, mettre à jour le **dossier de skills** dans la mémoire partagée
+que l'user constitue progressivement comme second cerveau :
+
+<https://drive.google.com/drive/folders/1V5ZnCf4eYp18NvdVpmqJHzl5p1Yliz9b>
+
+Cette mémoire est destinée à être partagée **à la demande** entre ses
+différents espaces Claude — chat, Cowork et Code. Ce qui s'y range n'est
+donc pas propre à ce projet : ce sont les compétences et les règles
+réutilisables ailleurs, pas le détail d'une livraison. Le journal des
+livraisons reste dans ce fichier et dans l'historique du dépôt.
+
+Ce qui mérite d'y figurer, typiquement : une règle générale tirée d'un
+piège rencontré (« un max-height chiffré finit toujours par rogner
+quelque chose »), une manière de vérifier qui a marché (mesurer la
+géométrie rendue plutôt que le DOM), un arbitrage transposable à un autre
+projet. Ce qui n'y a pas sa place : les numéros de PR, les noms de
+fichiers de ce dépôt, les valeurs de configuration.
+
+**En pratique** : la mise à jour demande l'accès au connecteur Google
+Drive dans la session courante. S'il n'est pas disponible au moment du
+merge, le dire plutôt que de laisser croire que c'est fait, et proposer
+le contenu à coller.
+
+---
+
 ## 8. Repères pour reprendre le travail à froid
 
 - Branche de dev : `claude/leaman-test-web-app-ahuy0e` (l'user pousse
