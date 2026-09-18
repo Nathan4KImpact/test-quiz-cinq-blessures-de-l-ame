@@ -62,22 +62,28 @@ quelle passation, import/export CSV, impression PDF, suppression.
   (tous les dossiers antérieurs n'en ont pas) et en changer quand il
   est oublié. Un seul endpoint couvre les deux, `set-password`, qui
   exige une session déjà ouverte.
-- **Passer le test exige aussi de s'authentifier**, dès lors que les
-  coordonnées saisies correspondent à un dossier déjà en base. Le
-  formulaire d'accueil demandait déjà un mot de passe : il sert de
-  preuve (`api/_auth/precheck.js`), et l'écran de connexion ne
-  s'interpose que s'il ne convient pas. Un dossier neuf n'est jamais
-  bloqué, et sa session s'ouvre à sa création.
+- **Passer le test exige aussi de s'authentifier**, dès lors que
+  l'adresse saisie correspond à un dossier déjà en base
+  (`api/_auth/precheck.js` puis le 403 de `/api/submit`). Un dossier neuf
+  n'est jamais bloqué, et sa session s'ouvre à sa création.
+- **Aucun mot de passe n'est demandé pour passer le test.** Il se définit
+  depuis l'espace personnel, le jour où la personne veut revenir consulter
+  son suivi. Conséquence assumée : un participant qui revient et n'a jamais
+  créé d'espace passe par le code e-mail. La friction retirée profite au
+  primo-arrivant, qui est le cas visé ; celui qui revient a un dossier à
+  protéger.
 
 ### Modèle de données
 
 Deux tables Postgres seulement :
 
-- `participants` — une ligne par personne. **Clé d'identité stable =
-  téléphone normalisé** (pas l'email, qui peut changer). `email`
-  obligatoire pour le contact, `gender` en check `('homme','femme')`,
-  `city`/`postal_code` facultatifs, `created_at`/`last_test_at`
-  /`reminder_sent_at` pour le suivi.
+- `participants` — une ligne par personne. **Clé d'identité = e-mail,
+  unique** (migration 006). Le téléphone reste obligatoire mais n'est plus
+  unique : plusieurs personnes d'un même foyer peuvent donner le même
+  numéro. `gender` en check `('homme','femme')`,
+  `city`/`postal_code` facultatifs, `created_at`/`last_test_at` et deux
+  colonnes de relance (`reminder_1m_sent_at`, `reminder_sent_at`), remises
+  à null à chaque nouvelle passation.
 - `attempts` — une ligne par passation, FK vers `participants` avec
   **`ON DELETE CASCADE`** (supprimer une personne emporte ses tests),
   `attempt_number` incrémental par participant (index unique composite
@@ -109,7 +115,7 @@ js/app.js                 Logique publique (état, scoring local, submit, rendu,
 js/admin.js               Logique admin
 sql/schema.sql             Schéma pour installation neuve
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
-api/submit.js              Enregistre une passation (validation + upsert par téléphone)
+api/submit.js              Enregistre une passation (validation + upsert par e-mail)
 api/auth/[action].js       Route unique de l'authentification (voir plafond Vercel)
 api/_auth/login.js         Connexion e-mail + mot de passe (chemin principal)
 api/_auth/precheck.js      Contrôle d'identité à la validation du formulaire
@@ -124,11 +130,12 @@ api/admin/login.js         Auth admin (compare le mot de passe, pose le cookie)
 api/admin/logout.js        Efface le cookie
 api/admin/participants.js  Liste + dernier résultat de chaque participant
 api/admin/participant.js   GET détail + historique / DELETE participant
-api/cron/reminders.js      Cron : rappel 6 mois via Resend (optionnel)
+api/cron/reminders.js      Cron : rappels 1 mois et 6 mois via Resend (optionnel)
 api/_lib/supabase.js       Client REST minimaliste vers PostgREST
 api/_lib/scoring.js        Recalcul serveur des scores + validation
 api/_lib/auth.js           Cookie signé HMAC, comparaison timing-safe
 vercel.json                cleanUrls + définition du cron
+tests/                     Mock d'API + parcours Playwright — `bash tests/run.sh`
 ```
 
 ### Variables d'environnement Vercel
@@ -157,9 +164,13 @@ redéploiement.
 ### Développement piloté par l'usage
 
 - **Toujours tester le parcours de bout en bout dans un vrai
-  navigateur** avant de dire « c'est fait ». Playwright + mock API
-  local a rattrapé plusieurs bugs invisibles côté code (thème qui
-  n'appliquait pas, race condition sur les clics, etc.).
+  navigateur** avant de dire « c'est fait » : `bash tests/run.sh`.
+  Playwright + mock API local a rattrapé plusieurs bugs invisibles côté
+  code (thème qui n'appliquait pas, race condition sur les clics, champ
+  trop mince, texte rogné).
+  **Le harnais vit dans le dépôt** depuis la livraison #25 : il était
+  auparavant dans un répertoire temporaire, et disparaissait entre deux
+  sessions — il a fallu le réécrire une fois pour de bon.
 - **Une PR par changement**, petites et mergeables. On voit
   exactement ce qui a produit chaque évolution ; roll-back facile.
 - **README avec table de variables d'env, chemin de migration et
@@ -182,30 +193,34 @@ passe très bien sur un bouton invisible.
 
 ### Un endpoint ouvert ne doit jamais toucher à un secret
 
-**Contexte** : `/api/submit` est public et identifie la personne par son
-téléphone — c'est ce qui permet de relier les passations. En ajoutant le
-mot de passe au formulaire du test, la tentation était de le faire
-enregistrer par le même endpoint.
-**Le piège** : qui connaît un numéro de téléphone aurait pu poser un mot
-de passe sur le dossier de son titulaire, puis se connecter et lire tout
-son suivi psychologique. Une fonctionnalité de confort ouvrait une
-usurpation complète.
-**Règle** : `/api/submit` n'accepte un mot de passe que pour un dossier
-**qu'il crée**. Modifier celui d'un dossier existant passe uniquement par
-`set-password`, qui exige une session déjà prouvée par code e-mail.
-**Test associé** : une passation « pirate » sur le téléphone de
-quelqu'un, avec un mot de passe dans la charge utile, puis vérification
-que l'ancien mot de passe fonctionne toujours et que le nouveau est
-refusé.
+**Contexte** : `/api/submit` est public. Quand le formulaire du test
+demandait encore un mot de passe, la tentation était de le faire
+enregistrer par ce même endpoint.
+**Le piège** : qui connaissait l'identifiant d'un dossier aurait pu y
+poser un mot de passe, puis se connecter et lire tout le suivi
+psychologique de son titulaire. Une fonctionnalité de confort ouvrait une
+usurpation complète. La parade d'alors : n'accepter le mot de passe que
+pour un dossier **que l'endpoint crée lui-même**.
+**Épilogue** : le mot de passe a fini par quitter le formulaire (livraison
+#25, pour alléger l'arrivée d'un primo-participant). `/api/submit` ne
+manipule donc plus aucun secret — un test le vérifie en relisant le
+fichier. Poser ou changer un mot de passe passe uniquement par
+`set-password`, qui exige une session déjà prouvée.
+**Règle qui survit au cas particulier** : un endpoint accessible sans
+preuve d'identité ne doit jamais pouvoir écrire un secret. Si la question
+se repose, c'est le signe qu'il faut un endpoint authentifié, pas une
+condition de plus.
 
 ### Ne jamais faire transiter un secret par localStorage
 
 L'état du quiz est sérialisé dans `localStorage` à chaque réponse pour
-permettre la reprise. Y ranger le mot de passe choisi au formulaire
-l'aurait laissé en clair sur l'appareil — souvent partagé — longtemps
-après la fin du test. Il vit donc dans une variable de module
-(`pendingPassword`), effacée dès l'envoi. Un test relit `localStorage`
-après la passation pour vérifier que le mot de passe ne s'y trouve pas.
+permettre la reprise. Tant que le formulaire demandait un mot de passe,
+celui-ci vivait dans une variable de module effacée dès l'envoi, jamais
+dans l'état sérialisé : l'y ranger l'aurait laissé en clair sur
+l'appareil — souvent partagé — longtemps après la fin du test.
+Le formulaire n'en demande plus, donc le problème a disparu par
+soustraction. **La règle reste** : avant d'ajouter un champ à un état
+persisté, se demander ce qu'il devient sur un téléphone prêté.
 
 ### Une police de CDN est une fuite de données, pas un détail technique
 
@@ -374,23 +389,23 @@ qui peut répondre à 50 questions avec le numéro d'un autre.
 **Correctif, en deux temps** :
 1. `/api/submit` refuse en **403** de rattacher une passation à un dossier
    existant sans session participant correspondante — c'est le contrôle qui
-   compte, une requête forgée ne le contourne pas. Le dossier est cherché
-   par téléphone **et** par e-mail : créer un second dossier sur l'adresse
-   de quelqu'un rendrait la connexion ambiguë pour les deux (cf. 005).
+   compte, une requête forgée ne le contourne pas.
 2. `/api/auth/precheck`, appelé à la validation du formulaire, évite de
-   faire répondre 50 questions pour rien. Le mot de passe déjà demandé au
-   formulaire sert de preuve : s'il est bon, la session s'ouvre et le test
-   démarre sans écran supplémentaire ; sinon l'écran de connexion prend le
-   relais en mode « verrou ».
+   faire répondre 50 questions pour rien : si l'adresse correspond à un
+   dossier, l'écran de connexion s'interpose en mode « verrou », puis
+   enchaîne directement sur le test une fois l'identité prouvée.
+**Depuis la migration 006**, c'est l'e-mail seul qui est consulté : le
+téléphone est redevenu partageable, et le verrouiller aurait bloqué un
+enfant utilisant le numéro d'un parent.
 **Effet de bord voulu** : un dossier neuf ouvre sa session à sa création,
 donc l'espace participant est accessible dans la foulée du premier test.
 **Ce que ça coûte** : le formulaire dit désormais qu'un dossier existe pour
-ces coordonnées. C'est l'oracle classique de tout formulaire d'inscription,
+cette adresse. C'est l'oracle classique de tout formulaire d'inscription,
 sans commune mesure avec ce qu'il remplace.
-**Test associé** : `drive-gate` — l'écran refuse de démarrer, aucune donnée
-du dossier visé n'atteint la page, la requête forgée est refusée par
-téléphone comme par e-mail, et le précontrôle ne pose ni ne change aucun
-mot de passe.
+**Test associé** : `tests/drive-identite.js` — l'écran refuse de démarrer,
+aucune donnée du dossier visé n'atteint la page, la requête forgée est
+refusée, et le même envoi avec un téléphone partagé mais une adresse libre
+passe bien.
 
 ### `[hidden]` ne masque rien face à une règle d'auteur
 
@@ -419,6 +434,46 @@ de chaque cellule à cinq largeurs de fenêtre, et vérifie qu'aucune boîte
 n'en recouvre une autre. Vérifié en remettant l'ancien CSS : le test
 échoue bien aux cinq largeurs.
 
+### Le blur d'un champ précède le clic sur son bouton
+
+**Symptôme** : le bouton « afficher le mot de passe » révélait bien la
+saisie, mais un second clic ne la remasquait jamais.
+**Cause** : appuyer sur le bouton fait d'abord perdre le focus au champ. Le
+gestionnaire de `blur` — posé pour remasquer quand on quitte le champ —
+repassait en `password`, puis le `click` voyait un champ masqué et
+rebasculait en clair. Deux comportements corrects annulés l'un par l'autre.
+**Correctif** : `mousedown` + `preventDefault()` sur le bouton, pour que le
+champ ne perde pas le focus. Le `click` suit normalement.
+**Leçon** : dès qu'un bouton agit sur un champ qui a son propre
+gestionnaire de `blur`, l'ordre des événements fait partie du problème.
+
+### Un max-height chiffré finit toujours par rogner quelque chose
+
+**Symptôme** (signalé par un utilisateur sur son téléphone) : le texte des
+fiches de blessure était coupé net, sans possibilité de faire défiler.
+**Cause** : `.accordion-item.open .accordion-body { max-height: 900px }` avec
+`overflow: hidden`. Sur un écran large le contenu tenait ; sur un téléphone,
+le même texte occupe deux à trois fois plus de hauteur et dépassait le
+plafond. Ce qui dépasse est simplement invisible, et rien ne l'annonce.
+**Correctif** : animer `grid-template-rows: 0fr → 1fr` sur une grille, avec
+un enfant unique qui porte l'`overflow`. La piste se cale sur la hauteur
+réelle du contenu, quelle qu'elle soit — il n'y a plus de valeur à deviner.
+**Détection** : comparer `scrollHeight` de l'enveloppe interne à la hauteur
+de la boîte, en 390 px de large. Un test qui vérifie la présence du texte
+dans le DOM passe : le texte *est* là, il n'est simplement pas atteignable.
+
+### Un sélecteur CSS qui oublie un type d'input
+
+**Symptôme** : à l'inscription, le champ mot de passe était visiblement plus
+mince que le champ e-mail juste au-dessus.
+**Cause** : la règle listait `input[type="text"]`, `[type="email"]` et
+`[type="tel"]` — pas `[type="password"]`, qui gardait donc le style par
+défaut du navigateur. Personne ne l'avait vu parce que le champ fonctionnait.
+**Mesure** : 19 px de haut contre 53 px pour ses voisins.
+**Leçon** : une liste de sélecteurs par type est une liste à maintenir. Un
+test qui compare la hauteur rendue de deux champs voisins l'attrape ; une
+relecture du CSS, rarement.
+
 ### Envs Vercel « Shared » vs projet
 
 **Symptôme** : `ADMIN_PASSWORD n'est pas configuré côté serveur`
@@ -443,7 +498,7 @@ partage entre systèmes non liés.
 | Décision | Retenue | Raison |
 |---|---|---|
 | Backend BDD | Supabase (Postgres) | Vs Airtable : RLS, EU, portabilité, SQL |
-| Identifiant de suivi | Téléphone normalisé | L'email peut changer plus souvent |
+| Identifiant de suivi | ~~Téléphone~~ → **E-mail** (migration 006) | Le téléphone se partage dans un foyer ; il bloquait un enfant voulant passer le test avec le numéro d'un parent |
 | Rapport détaillé | Dominante + modérée seulement | Éviter la surcharge cognitive |
 | Ordre du sélecteur de genre | Femme (Leaman) d'abord | Public prioritaire du test |
 | Séparateur d'ex-æquo | ` - ` (au lieu de ` & `) | Plus neutre visuellement |
@@ -503,8 +558,9 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 - Analytics globales (moyennes par blessure, par ville, par cohorte).
 - Version anglaise / multi-langue (nécessiterait un système de
   chaînes séparé du contenu).
-- Tests unitaires JS automatisés (actuellement : `node --check` +
-  Playwright de bout en bout).
+- Couverture de test plus large : `tests/` couvre l'identité, les
+  relances et les deux défauts d'affichage corrigés, pas encore le
+  tableau de bord admin ni le bandeau de progrès.
 - Envoi automatique du rapport PDF par mail au participant après le
   test.
 
@@ -517,8 +573,12 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 - Dépôt : `Nathan4KImpact/test-quiz-cinq-blessures-de-l-ame`.
 - Prod : URL Vercel du projet (voir dashboard Vercel de l'user).
 - Base : projet Supabase de l'user (région Europe – Frankfurt).
-- Contact utilisateur / e-mail par défaut du bouton coaching :
-  `nathanaeltalla@hotmail.com` (dans `js/app.js`).
+- Bouton coaching : la demande part vers `bienvenue@vieflorissante.com`,
+  avec Esther en copie cachée (`COACHING_BCC` dans `js/app.js`). À noter,
+  le « cci » d'un lien `mailto:` n'a rien de confidentiel — le logiciel
+  de messagerie du participant affiche le champ et peut le modifier.
+- Prod : `https://coaching.vieflorissante.com` (domaine de l'association,
+  depuis le 16/09/2026). Envoi d'e-mails actif via Resend sur ce domaine.
 - L'user itère souvent en modifiant lui-même le code entre deux
   échanges (ajout de fonctionnalités CSV, delete, print). **Toujours
   `git fetch origin main` puis `git checkout -B <branche>

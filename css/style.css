@@ -195,7 +195,8 @@ label {
 
 input[type="text"],
 input[type="email"],
-input[type="tel"] {
+input[type="tel"],
+input[type="password"] {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 13px 14px;
@@ -209,9 +210,83 @@ input[type="tel"] {
 
 input[type="text"]:focus,
 input[type="email"]:focus,
-input[type="tel"]:focus {
+input[type="tel"]:focus,
+input[type="password"]:focus {
   outline: 2px solid var(--rose);
   outline-offset: 1px;
+}
+
+/* ---------- Champ mot de passe avec bouton de révélation ---------- */
+/* L'enveloppe porte la marge basse ; le champ la perd, sinon le bouton
+   se retrouverait décalé de 14 px vers le haut par rapport au texte. */
+
+.password-field {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.password-field input {
+  margin-bottom: 0;
+  padding-right: 48px;
+}
+
+.password-reveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 46px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  border-radius: 0 12px 12px 0;
+}
+
+/* L'œil est dessiné en CSS plutôt qu'en emoji : un emoji change de forme
+   d'une plateforme à l'autre et ne se colore pas avec le thème. */
+.password-reveal::before {
+  content: "";
+  width: 22px;
+  height: 14px;
+  border: 1.7px solid currentColor;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  box-sizing: border-box;
+}
+
+.password-reveal::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 1.7px solid currentColor;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+/* Œil barré quand le mot de passe est visible : l'icône annonce ce que
+   fera le clic suivant, pas l'état courant. */
+.password-reveal[aria-pressed="true"] {
+  color: var(--rose-dark);
+}
+
+.password-reveal[aria-pressed="true"]::after {
+  width: 26px;
+  height: 0;
+  border-width: 0 0 1.7px 0;
+  border-radius: 0;
+  transform: rotate(-35deg);
+}
+
+.password-reveal:hover { color: var(--rose-dark); }
+
+.password-reveal:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: -2px;
+  border-radius: 12px;
 }
 
 .form-row {
@@ -712,16 +787,36 @@ input[type="tel"]:focus {
   transform: rotate(180deg);
 }
 
+/* Le dépliement s'anime par la hauteur de piste d'une grille, et non par
+   un max-height chiffré. L'ancien plafond de 900 px suffisait sur un écran
+   large, mais sur un téléphone le même texte occupe deux à trois fois plus
+   de hauteur : la fin des fiches était coupée net par overflow:hidden,
+   sans aucun moyen d'atteindre le texte manquant. Avec 0fr → 1fr, la piste
+   se cale toujours sur la hauteur réelle du contenu, quelle qu'elle soit. */
+
 .accordion-body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
   padding: 0 20px;
 }
 
+/* L'enfant unique porte l'overflow : c'est lui qui est rogné pendant
+   l'animation, la grille ne sachant pas rogner elle-même. */
+.accordion-body > .accordion-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .accordion-item.open .accordion-body {
-  max-height: 900px;
+  grid-template-rows: 1fr;
   padding: 0 20px 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-body {
+    transition: none;
+  }
 }
 
 .accordion-body h4 {
@@ -1195,8 +1290,12 @@ input[type="tel"]:focus {
   }
 
   .accordion-body {
-    max-height: none !important;
+    grid-template-rows: 1fr !important;
     padding: 0 20px 20px !important;
+  }
+
+  .accordion-body > .accordion-inner {
+    overflow: visible !important;
   }
 
   /* Le graphique d'évolution doit apparaître en entier, sans barre de
