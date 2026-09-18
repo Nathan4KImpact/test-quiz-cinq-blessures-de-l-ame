@@ -164,9 +164,13 @@ redéploiement.
 ### Développement piloté par l'usage
 
 - **Toujours tester le parcours de bout en bout dans un vrai
-  navigateur** avant de dire « c'est fait ». Playwright + mock API
-  local a rattrapé plusieurs bugs invisibles côté code (thème qui
-  n'appliquait pas, race condition sur les clics, etc.).
+  navigateur** avant de dire « c'est fait » : `bash tests/run.sh`.
+  Playwright + mock API local a rattrapé plusieurs bugs invisibles côté
+  code (thème qui n'appliquait pas, race condition sur les clics, champ
+  trop mince, texte rogné).
+  **Le harnais vit dans le dépôt** depuis la livraison #25 : il était
+  auparavant dans un répertoire temporaire, et disparaissait entre deux
+  sessions — il a fallu le réécrire une fois pour de bon.
 - **Une PR par changement**, petites et mergeables. On voit
   exactement ce qui a produit chaque évolution ; roll-back facile.
 - **README avec table de variables d'env, chemin de migration et
@@ -189,30 +193,34 @@ passe très bien sur un bouton invisible.
 
 ### Un endpoint ouvert ne doit jamais toucher à un secret
 
-**Contexte** : `/api/submit` est public et identifie la personne par son
-téléphone — c'est ce qui permet de relier les passations. En ajoutant le
-mot de passe au formulaire du test, la tentation était de le faire
-enregistrer par le même endpoint.
-**Le piège** : qui connaît un numéro de téléphone aurait pu poser un mot
-de passe sur le dossier de son titulaire, puis se connecter et lire tout
-son suivi psychologique. Une fonctionnalité de confort ouvrait une
-usurpation complète.
-**Règle** : `/api/submit` n'accepte un mot de passe que pour un dossier
-**qu'il crée**. Modifier celui d'un dossier existant passe uniquement par
-`set-password`, qui exige une session déjà prouvée par code e-mail.
-**Test associé** : une passation « pirate » sur le téléphone de
-quelqu'un, avec un mot de passe dans la charge utile, puis vérification
-que l'ancien mot de passe fonctionne toujours et que le nouveau est
-refusé.
+**Contexte** : `/api/submit` est public. Quand le formulaire du test
+demandait encore un mot de passe, la tentation était de le faire
+enregistrer par ce même endpoint.
+**Le piège** : qui connaissait l'identifiant d'un dossier aurait pu y
+poser un mot de passe, puis se connecter et lire tout le suivi
+psychologique de son titulaire. Une fonctionnalité de confort ouvrait une
+usurpation complète. La parade d'alors : n'accepter le mot de passe que
+pour un dossier **que l'endpoint crée lui-même**.
+**Épilogue** : le mot de passe a fini par quitter le formulaire (livraison
+#25, pour alléger l'arrivée d'un primo-participant). `/api/submit` ne
+manipule donc plus aucun secret — un test le vérifie en relisant le
+fichier. Poser ou changer un mot de passe passe uniquement par
+`set-password`, qui exige une session déjà prouvée.
+**Règle qui survit au cas particulier** : un endpoint accessible sans
+preuve d'identité ne doit jamais pouvoir écrire un secret. Si la question
+se repose, c'est le signe qu'il faut un endpoint authentifié, pas une
+condition de plus.
 
 ### Ne jamais faire transiter un secret par localStorage
 
 L'état du quiz est sérialisé dans `localStorage` à chaque réponse pour
-permettre la reprise. Y ranger le mot de passe choisi au formulaire
-l'aurait laissé en clair sur l'appareil — souvent partagé — longtemps
-après la fin du test. Il vit donc dans une variable de module
-(`pendingPassword`), effacée dès l'envoi. Un test relit `localStorage`
-après la passation pour vérifier que le mot de passe ne s'y trouve pas.
+permettre la reprise. Tant que le formulaire demandait un mot de passe,
+celui-ci vivait dans une variable de module effacée dès l'envoi, jamais
+dans l'état sérialisé : l'y ranger l'aurait laissé en clair sur
+l'appareil — souvent partagé — longtemps après la fin du test.
+Le formulaire n'en demande plus, donc le problème a disparu par
+soustraction. **La règle reste** : avant d'ajouter un champ à un état
+persisté, se demander ce qu'il devient sur un téléphone prêté.
 
 ### Une police de CDN est une fuite de données, pas un détail technique
 
@@ -381,23 +389,23 @@ qui peut répondre à 50 questions avec le numéro d'un autre.
 **Correctif, en deux temps** :
 1. `/api/submit` refuse en **403** de rattacher une passation à un dossier
    existant sans session participant correspondante — c'est le contrôle qui
-   compte, une requête forgée ne le contourne pas. Le dossier est cherché
-   par téléphone **et** par e-mail : créer un second dossier sur l'adresse
-   de quelqu'un rendrait la connexion ambiguë pour les deux (cf. 005).
+   compte, une requête forgée ne le contourne pas.
 2. `/api/auth/precheck`, appelé à la validation du formulaire, évite de
-   faire répondre 50 questions pour rien. Le mot de passe déjà demandé au
-   formulaire sert de preuve : s'il est bon, la session s'ouvre et le test
-   démarre sans écran supplémentaire ; sinon l'écran de connexion prend le
-   relais en mode « verrou ».
+   faire répondre 50 questions pour rien : si l'adresse correspond à un
+   dossier, l'écran de connexion s'interpose en mode « verrou », puis
+   enchaîne directement sur le test une fois l'identité prouvée.
+**Depuis la migration 006**, c'est l'e-mail seul qui est consulté : le
+téléphone est redevenu partageable, et le verrouiller aurait bloqué un
+enfant utilisant le numéro d'un parent.
 **Effet de bord voulu** : un dossier neuf ouvre sa session à sa création,
 donc l'espace participant est accessible dans la foulée du premier test.
 **Ce que ça coûte** : le formulaire dit désormais qu'un dossier existe pour
-ces coordonnées. C'est l'oracle classique de tout formulaire d'inscription,
+cette adresse. C'est l'oracle classique de tout formulaire d'inscription,
 sans commune mesure avec ce qu'il remplace.
-**Test associé** : `drive-gate` — l'écran refuse de démarrer, aucune donnée
-du dossier visé n'atteint la page, la requête forgée est refusée par
-téléphone comme par e-mail, et le précontrôle ne pose ni ne change aucun
-mot de passe.
+**Test associé** : `tests/drive-identite.js` — l'écran refuse de démarrer,
+aucune donnée du dossier visé n'atteint la page, la requête forgée est
+refusée, et le même envoi avec un téléphone partagé mais une adresse libre
+passe bien.
 
 ### `[hidden]` ne masque rien face à une règle d'auteur
 
@@ -550,8 +558,9 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 - Analytics globales (moyennes par blessure, par ville, par cohorte).
 - Version anglaise / multi-langue (nécessiterait un système de
   chaînes séparé du contenu).
-- Tests unitaires JS automatisés (actuellement : `node --check` +
-  Playwright de bout en bout).
+- Couverture de test plus large : `tests/` couvre l'identité, les
+  relances et les deux défauts d'affichage corrigés, pas encore le
+  tableau de bord admin ni le bandeau de progrès.
 - Envoi automatique du rapport PDF par mail au participant après le
   test.
 
@@ -564,8 +573,12 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 - Dépôt : `Nathan4KImpact/test-quiz-cinq-blessures-de-l-ame`.
 - Prod : URL Vercel du projet (voir dashboard Vercel de l'user).
 - Base : projet Supabase de l'user (région Europe – Frankfurt).
-- Contact utilisateur / e-mail par défaut du bouton coaching :
-  `nathanaeltalla@hotmail.com` (dans `js/app.js`).
+- Bouton coaching : la demande part vers `bienvenue@vieflorissante.com`,
+  avec Esther en copie cachée (`COACHING_BCC` dans `js/app.js`). À noter,
+  le « cci » d'un lien `mailto:` n'a rien de confidentiel — le logiciel
+  de messagerie du participant affiche le champ et peut le modifier.
+- Prod : `https://coaching.vieflorissante.com` (domaine de l'association,
+  depuis le 16/09/2026). Envoi d'e-mails actif via Resend sur ce domaine.
 - L'user itère souvent en modifiant lui-même le code entre deux
   échanges (ajout de fonctionnalités CSV, delete, print). **Toujours
   `git fetch origin main` puis `git checkout -B <branche>
