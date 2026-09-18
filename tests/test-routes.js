@@ -79,10 +79,17 @@ const call = (action, extra) =>
   console.log("\n--- lien de réservation de coaching ---");
   const appJs = fs.readFileSync(path.join(ROOT, "js/app.js"), "utf8");
   ok("destinataire : la boîte de l'association",
-    /mailto:bienvenue@vieflorissante\.com/.test(appJs), true);
-  ok("copie cachée présente", /\bbcc=/.test(appJs), true);
+    /COACHING_TO\s*=\s*"bienvenue@vieflorissante\.com"/.test(appJs), true);
+  ok("copie cachée présente", /\bbcc=\$\{encodeURIComponent\(COACHING_BCC\)\}/.test(appJs), true);
   ok("l'ancien destinataire n'est plus en destinataire direct",
     /mailto:bouangaesther9@gmail\.com/.test(appJs), false);
+
+  // Repli desktop : un mailto sans logiciel associé ne produit rien.
+  const htmlCta = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  ok("l'adresse est lisible en clair sur la page",
+    /cta-fallback[\s\S]{0,300}bienvenue@vieflorissante\.com/.test(htmlCta), true);
+  ok("un bouton propose de copier l'adresse",
+    /id="copy-booking-email"/.test(htmlCta), true);
 
   // ---------- Le formulaire d'accueil ne demande plus de mot de passe ----
   console.log("\n--- formulaire d'accueil ---");

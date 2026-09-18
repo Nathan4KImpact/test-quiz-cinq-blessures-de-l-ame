@@ -848,6 +848,26 @@ input[type="password"]:focus {
   text-align: center;
 }
 
+/* Sur un ordinateur sans client de messagerie associé, un lien mailto ne
+   produit aucun effet visible : la personne clique et il ne se passe rien.
+   Cette ligne donne l'adresse en clair, discrètement, pour qu'elle ne
+   reste pas bloquée. */
+.cta-fallback {
+  margin: 14px 0 0;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.cta-fallback a {
+  color: var(--rose-dark);
+  overflow-wrap: anywhere;
+}
+
+.cta-fallback .link-btn {
+  font-size: 0.84rem;
+}
+
 .cta-card p {
   color: var(--ink-soft);
   line-height: 1.6;
