@@ -19,6 +19,16 @@ Le PDF est rendu par un vrai navigateur, donc à l'identique de ce que montre
 la page. Le DOCX est reconstruit en OOXML, avec des styles Word natifs
 (Titre 1, 2, 3) pour rester navigable et modifiable par l'association.
 
+La génération **n'est pas reproductible à l'octet près** : le PDF porte une
+date de création et un identifiant, le DOCX des horodatages d'archive. Relancer
+le script sans avoir touché au HTML salit donc l'arbre de travail avec quatre
+binaires « modifiés » dont le contenu est identique. Dans ce cas, restaurer
+plutôt que commiter :
+
+```bash
+git checkout -- docs/*.pdf docs/*.docx
+```
+
 ## Pourquoi un contrôle de couverture
 
 La conversion vers DOCX procède par réécritures successives du HTML. **Une
