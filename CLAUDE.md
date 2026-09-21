@@ -113,7 +113,7 @@ js/progress.js            Détection des progrès entre passations (bandeau de f
 js/confetti.js            Confetti canvas maison, sans dépendance
 js/app.js                 Logique publique (état, scoring local, submit, rendu, espace participant)
 js/admin.js               Logique admin
-sql/schema.sql             Schéma pour installation neuve
+sql/schema.sql             Schéma pour installation neuve (état post-006)
 sql/migrations/            Migrations à exécuter dans l'ordre sur une base existante
 api/submit.js              Enregistre une passation (validation + upsert par e-mail)
 api/auth/[action].js       Route unique de l'authentification (voir plafond Vercel)
@@ -322,6 +322,27 @@ substring(id::text, 1, 8) where phone is null or phone = ''` avant le
 `SET NOT NULL`. Idem pour dédoublonnage avant `UNIQUE`.
 **Leçon** : toute contrainte plus stricte doit être précédée du
 remplissage / de la déduplication qui la rend valide.
+
+### Le fichier d'installation neuve prend du retard en silence
+
+**Symptôme** : aucun. C'est tout le problème. `sql/schema.sql` décrivait
+encore l'état d'avant la migration 002 — téléphone unique, e-mail sans
+unicité, ni les codes de connexion (004), ni le mot de passe (005), ni la
+colonne de rappel à 1 mois (006). **Quatre migrations d'écart**, dont
+l'inversion de la clé d'identité.
+**Cause** : seules les migrations sont exécutées au quotidien, donc seules
+elles sont vérifiées par l'usage. `schema.sql` ne sert qu'à recréer la base
+— nouvel environnement, restauration, projet de secours — c'est-à-dire un
+jour où personne n'a envie de découvrir un schéma périmé.
+**Correctif** : `schema.sql` réaligné sur l'état post-006, et
+`tests/test-schema.js` qui compare les deux : toute colonne `add column if
+not exists` et toute table `create table if not exists` d'une migration
+doit se retrouver dans `schema.sql`, l'e-mail doit y être unique et le
+téléphone non. Vérifié en remettant l'ancien fichier : 6 assertions
+tombent.
+**Règle** : quand deux fichiers décrivent la même cible et qu'un seul est
+exécuté régulièrement, l'autre dérive. Il lui faut un test, pas de la
+discipline.
 
 ### Le plan Hobby de Vercel plafonne à 12 fonctions serverless
 
@@ -559,8 +580,8 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 - Version anglaise / multi-langue (nécessiterait un système de
   chaînes séparé du contenu).
 - Couverture de test plus large : `tests/` couvre l'identité, les
-  relances et les deux défauts d'affichage corrigés, pas encore le
-  tableau de bord admin ni le bandeau de progrès.
+  relances, la cohérence du schéma et les deux défauts d'affichage
+  corrigés, pas encore le tableau de bord admin ni le bandeau de progrès.
 - Envoi automatique du rapport PDF par mail au participant après le
   test.
 

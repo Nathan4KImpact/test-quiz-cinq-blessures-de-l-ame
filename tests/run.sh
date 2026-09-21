@@ -49,6 +49,7 @@ echo "--- unitaires (sans navigateur) ---"
 run_unit test-routes
 run_unit test-relances
 run_unit test-submit
+run_unit test-schema
 
 echo
 echo "--- parcours navigateur (mock neuf à chaque fois) ---"
