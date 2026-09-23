@@ -589,6 +589,34 @@ Volontairement laissé de côté pour ne pas sur-ingénierer :
 
 ## 7 bis. Rituels convenus avec l'user
 
+### Avant de compléter une PR ouverte dans une session antérieure : vérifier son état
+
+**Règle posée le 23/09/2026.** Une PR créée lors d'une session datant de plus
+d'un jour **ne peut pas être présumée ouverte**. Avant d'y ajouter le moindre
+commit, aller lire son état : si elle a été fusionnée entre-temps, le travail
+suivant est un changement neuf, qui repart du dernier `main` sur une branche
+neuve et ouvre sa propre PR.
+
+```
+git fetch origin main
+git log --oneline origin/main..origin/<branche>   # vide => tout est fusionné
+```
+
+**Ce que ça évite.** Le cas vécu : la PR #28 avait été fusionnée pendant la
+nuit ; un commit de réorganisation est allé se poser sur sa branche, donc sur
+de l'historique déjà intégré, et personne ne l'aurait jamais relu. Il a fallu
+le déplacer après coup.
+
+**Corollaire.** Dès qu'une PR est fusionnée, réaligner sa branche sur `main`
+(`git branch -f <branche> origin/main` puis push) — une branche qui pointe
+encore sur de l'historique fusionné est une invitation à recommencer
+l'erreur.
+
+**À ne pas confondre** avec le réflexe de la section 8, qui dit de partir du
+dernier `main` au début de chaque changement. Celui-là garantit la bonne
+base ; celui-ci garantit la bonne destination. Suivre le premier sans le
+second, c'est exactement ce qui s'est produit.
+
 ### Après chaque merge de PR : mettre à jour la mémoire partagée
 
 **Règle posée le 18/09/2026.** À chaque fois qu'une PR est mergée sur
