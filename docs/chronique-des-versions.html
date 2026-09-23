@@ -337,6 +337,29 @@
 
   .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+  /* Ancienne référence d'une fiche, conservée sous la nouvelle pour qu'une
+     citation antérieure reste retrouvable. */
+  /* Renvoi d'une fiche vers celle qui l'a révisée. Les lots de la V7
+     s'étalent sur trois semaines et certains reviennent sur un choix
+     antérieur : sans ce renvoi, deux fiches d'une même version se
+     contrediraient sans que rien ne l'indique. */
+  .revision {
+    margin-top: .45rem;
+    padding-left: .75rem;
+    border-left: 2px solid var(--amber);
+    font-size: .88rem;
+    color: var(--amber);
+  }
+
+  .ref-old {
+    display: block;
+    margin-top: .15rem;
+    font-weight: 400;
+    font-size: .66rem;
+    letter-spacing: 0;
+    color: var(--ink-faint);
+  }
+
   /* ---------- Traçabilité ---------- */
 
   .trace {
@@ -426,7 +449,7 @@
       </div>
       <div>
         <dt>Versions étiquetées</dt>
-        <dd>V1, V2, V3, V3.1, V5, V6</dd>
+        <dd>V1, V2, V3, V3.1, V5, V6, V7</dd>
       </div>
       <div>
         <dt>Migrations base</dt>
@@ -1018,10 +1041,75 @@
     </div>
   </section>
 
+  <!-- ============ V7 &mdash; OUVERTURE ============ -->
+  <section>
+    <div class="section-head">
+      <p class="phase-meta">V7 &middot; 1<sup>er</sup> au 21 septembre 2026 &middot; livraisons #22 à #27</p>
+      <h2>V7 &mdash; Comptes, confidentialité, mise en service</h2>
+      <p>
+        Tout ce qui suit la V6 relève de la V7 : une même étape de maturité,
+        livrée en six temps. Elle donne un compte à chaque participant, ferme
+        un accès aux dossiers d'autrui, met le produit en service sur le
+        domaine de l'association, puis allège l'arrivée d'un nouveau venu.
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Sous-partie</th>
+            <th scope="col">Objet</th>
+            <th scope="col">Date</th>
+            <th scope="col">Fiches</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>V7.1</td>
+            <td>Un compte pour chaque participant</td>
+            <td class="num">1<sup>er</sup> et 2 septembre</td>
+            <td class="num">V7-01 à V7-07</td>
+          </tr>
+          <tr>
+            <td>V7.2</td>
+            <td>Continuité de service</td>
+            <td class="num">2 septembre</td>
+            <td class="num">V7-08 et V7-09</td>
+          </tr>
+          <tr>
+            <td>V7.3</td>
+            <td>Fermeture d'un accès aux dossiers d'autrui</td>
+            <td class="num">3 septembre</td>
+            <td class="num">V7-10 à V7-12</td>
+          </tr>
+          <tr>
+            <td>V7.4</td>
+            <td>Passage sur le domaine de l'association</td>
+            <td class="num">16 septembre</td>
+            <td class="num">V7-13 et V7-14</td>
+          </tr>
+          <tr>
+            <td>V7.5</td>
+            <td>Arrivée simplifiée et identité par l'e-mail</td>
+            <td class="num">18 septembre</td>
+            <td class="num">V7-15 à V7-21</td>
+          </tr>
+          <tr>
+            <td>V7.6</td>
+            <td>Fiabilité de la réinstallation</td>
+            <td class="num">21 septembre</td>
+            <td class="num">V7-22</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ============ PHASE 8 ============ -->
   <section>
     <div class="section-head">
-      <p class="phase-meta">Comptes participants &middot; 1<sup>er</sup> et 2 septembre 2026 &middot; livraison #22</p>
+      <p class="phase-meta">V7.1 &middot; 1<sup>er</sup> et 2 septembre 2026 &middot; livraison #22</p>
       <h2>Un compte pour chaque participant</h2>
       <p>
         Jusque-là, une personne ne revoyait ses résultats qu'en repassant le
@@ -1032,7 +1120,7 @@
     <div class="items">
 
       <article class="item">
-        <div class="ref">L22-01</div>
+        <div class="ref">V7-01<span class="ref-old">ex-L22-01</span></div>
         <div class="item-body">
           <h3>Connexion par e-mail et mot de passe</h3>
           <p>
@@ -1042,12 +1130,16 @@
             minimum ; la session reste ouverte sept jours, avec déconnexion
             disponible à tout moment.
           </p>
+          <p class="revision">
+            Révisé en V7.5 (fiche V7-15) : le mot de passe n'est plus demandé
+            au formulaire. Il se définit depuis l'espace personnel.
+          </p>
           <div class="chips"><span class="chip chip-live">Livré</span></div>
         </div>
       </article>
 
       <article class="item">
-        <div class="ref">L22-02</div>
+        <div class="ref">V7-02<span class="ref-old">ex-L22-02</span></div>
         <div class="item-body">
           <h3>Récupération par code à 6 chiffres</h3>
           <p>
@@ -1063,7 +1155,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L22-03</div>
+        <div class="ref">V7-03<span class="ref-old">ex-L22-03</span></div>
         <div class="item-body">
           <h3>Espace personnel</h3>
           <p>
@@ -1082,7 +1174,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L22-04</div>
+        <div class="ref">V7-04<span class="ref-old">ex-L22-04</span></div>
         <div class="item-body">
           <h3>Sortie d'un test en cours</h3>
           <p>
@@ -1096,7 +1188,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L22-05</div>
+        <div class="ref">V7-05<span class="ref-old">ex-L22-05</span></div>
         <div class="item-body">
           <h3>Thème « Vie Florissante »</h3>
           <p>
@@ -1111,7 +1203,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L22-06</div>
+        <div class="ref">V7-06<span class="ref-old">ex-L22-06</span></div>
         <div class="item-body">
           <h3>Police de caractères servie depuis l'application</h3>
           <p>
@@ -1132,7 +1224,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L22-07</div>
+        <div class="ref">V7-07<span class="ref-old">ex-L22-07</span></div>
         <div class="item-body">
           <h3>Protection des mots de passe et des codes</h3>
           <p>
@@ -1152,7 +1244,7 @@
   <!-- ============ PHASE 9 ============ -->
   <section>
     <div class="section-head">
-      <p class="phase-meta">Continuité &middot; 2 septembre 2026 &middot; livraison #23</p>
+      <p class="phase-meta">V7.2 &middot; 2 septembre 2026 &middot; livraison #23</p>
       <h2>Continuité de service</h2>
       <p>
         Deux mesures prises après une alerte d'inactivité de la base de données,
@@ -1163,7 +1255,7 @@
     <div class="items">
 
       <article class="item">
-        <div class="ref">L23-01</div>
+        <div class="ref">V7-08<span class="ref-old">ex-L23-01</span></div>
         <div class="item-body">
           <h3>Maintien en éveil de la base de données</h3>
           <p>
@@ -1178,7 +1270,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L23-02</div>
+        <div class="ref">V7-09<span class="ref-old">ex-L23-02</span></div>
         <div class="item-body">
           <h3>Avertissement en cas de non-enregistrement</h3>
           <p>
@@ -1201,7 +1293,7 @@
   <!-- ============ PHASE 10 ============ -->
   <section>
     <div class="section-head">
-      <p class="phase-meta">Confidentialité &middot; 3 septembre 2026 &middot; livraison #24</p>
+      <p class="phase-meta">V7.3 &middot; 3 septembre 2026 &middot; livraison #24</p>
       <h2>Fermeture d'un accès aux dossiers d'autrui</h2>
       <p>
         Le point le plus important de l'ensemble du périmètre. Une faille
@@ -1213,7 +1305,7 @@
     <div class="items">
 
       <article class="item">
-        <div class="ref">L24-01</div>
+        <div class="ref">V7-10<span class="ref-old">ex-L24-01</span></div>
         <div class="item-body">
           <h3>Un test ne peut être rattaché qu'à son propre dossier</h3>
           <p>
@@ -1229,6 +1321,11 @@
             comme par e-mail. Le refus est prononcé côté serveur : il ne se
             contourne pas depuis le navigateur.
           </p>
+          <p class="revision">
+            Révisé en V7.5 (fiche V7-18) : le dossier est désormais recherché
+            par la seule adresse e-mail, le téléphone pouvant être partagé
+            dans un foyer. Le contrôle côté serveur, lui, n'a pas bougé.
+          </p>
           <div class="chips">
             <span class="chip chip-fix">Correctif de sécurité</span>
             <span class="chip chip-live">Livré</span>
@@ -1237,7 +1334,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L24-02</div>
+        <div class="ref">V7-11<span class="ref-old">ex-L24-02</span></div>
         <div class="item-body">
           <h3>Contrôle d'identité avant le test</h3>
           <p>
@@ -1250,12 +1347,17 @@
             Sinon un écran de connexion s'interpose, et la connexion enchaîne
             directement sur le test. Un dossier nouveau n'est jamais bloqué.
           </p>
+          <p class="revision">
+            Révisé en V7.5 (fiche V7-15) : le formulaire ne demandant plus de
+            mot de passe, l'écran de connexion s'interpose chaque fois que
+            l'adresse saisie correspond à un dossier existant.
+          </p>
           <div class="chips"><span class="chip chip-live">Livré</span></div>
         </div>
       </article>
 
       <article class="item">
-        <div class="ref">L24-03</div>
+        <div class="ref">V7-12<span class="ref-old">ex-L24-03</span></div>
         <div class="item-body">
           <h3>Deux correctifs d'affichage</h3>
           <p>
@@ -1274,7 +1376,7 @@
   <!-- ============ PHASE 11 ============ -->
   <section>
     <div class="section-head">
-      <p class="phase-meta">Mise en service &middot; 16 septembre 2026</p>
+      <p class="phase-meta">V7.4 &middot; 16 septembre 2026</p>
       <h2>Passage sur le domaine de l'association</h2>
       <p>
         Sans modification du code : configuration du domaine et activation de
@@ -1285,7 +1387,7 @@
     <div class="items">
 
       <article class="item">
-        <div class="ref">MES-01</div>
+        <div class="ref">V7-13<span class="ref-old">ex-MES-01</span></div>
         <div class="item-body">
           <h3>Adresse publique définitive</h3>
           <p>
@@ -1299,7 +1401,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">MES-02</div>
+        <div class="ref">V7-14<span class="ref-old">ex-MES-02</span></div>
         <div class="item-body">
           <h3>Envoi d'e-mails activé</h3>
           <p>
@@ -1323,7 +1425,7 @@
   <!-- ============ PHASE 12 ============ -->
   <section>
     <div class="section-head">
-      <p class="phase-meta">Allègement du parcours &middot; 18 septembre 2026 &middot; livraisons #25 et #26</p>
+      <p class="phase-meta">V7.5 &middot; 18 septembre 2026 &middot; livraisons #25 et #26</p>
       <h2>Arrivée simplifiée et identité par l'e-mail</h2>
       <p>
         Deux changements demandés après les premiers usages réels : réduire ce
@@ -1335,7 +1437,7 @@
     <div class="items">
 
       <article class="item">
-        <div class="ref">L25-01</div>
+        <div class="ref">V7-15<span class="ref-old">ex-L25-01</span></div>
         <div class="item-body">
           <h3>Plus de mot de passe au formulaire du test</h3>
           <p>
@@ -1355,7 +1457,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L25-02</div>
+        <div class="ref">V7-16<span class="ref-old">ex-L25-02</span></div>
         <div class="item-body">
           <h3>Deux correctifs d'affichage signalés par les utilisateurs</h3>
           <p>
@@ -1371,7 +1473,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L25-03</div>
+        <div class="ref">V7-17<span class="ref-old">ex-L25-03</span></div>
         <div class="item-body">
           <h3>Demande de séance adressée à l'association</h3>
           <p>
@@ -1387,7 +1489,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L26-01</div>
+        <div class="ref">V7-18<span class="ref-old">ex-L26-01</span></div>
         <div class="item-body">
           <h3>L'adresse e-mail devient l'identité du dossier</h3>
           <p>
@@ -1406,7 +1508,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L26-02</div>
+        <div class="ref">V7-19<span class="ref-old">ex-L26-02</span></div>
         <div class="item-body">
           <h3>Rappel automatique à un mois</h3>
           <p>
@@ -1421,7 +1523,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L26-03</div>
+        <div class="ref">V7-20<span class="ref-old">ex-L26-03</span></div>
         <div class="item-body">
           <h3>Ordre d'écriture revu pour ne plus perdre une passation</h3>
           <p>
@@ -1436,7 +1538,7 @@
       </article>
 
       <article class="item">
-        <div class="ref">L26-04</div>
+        <div class="ref">V7-21<span class="ref-old">ex-L26-04</span></div>
         <div class="item-body">
           <h3>Migration de base 006</h3>
           <p>
@@ -1455,7 +1557,7 @@
   <!-- ============ PHASE 13 ============ -->
   <section>
     <div class="section-head">
-      <p class="phase-meta">Maintenance &middot; 21 septembre 2026 &middot; livraison #27</p>
+      <p class="phase-meta">V7.6 &middot; 21 septembre 2026 &middot; livraison #27</p>
       <h2>Fiabilité de la réinstallation</h2>
       <p>
         Sans effet sur le produit en service : il s'agit de garantir qu'une
@@ -1466,7 +1568,7 @@
     <div class="items">
 
       <article class="item">
-        <div class="ref">L27-01</div>
+        <div class="ref">V7-22<span class="ref-old">ex-L27-01</span></div>
         <div class="item-body">
           <h3>Schéma d'installation réaligné</h3>
           <p>
@@ -1561,11 +1663,24 @@
     <div class="callout">
       <h3>Note sur la numérotation des versions</h3>
       <p>
-        Aucune version 4 n'a été produite. La numérotation passe de la V3.1
-        (13 août) à la V5 (19 août) : la période intermédiaire a été consacrée à
-        l'outillage de l'administration, livré en huit lots successifs sans
-        libellé de version. Ce saut est intentionnel et ne correspond à aucune
-        livraison manquante.
+        <strong>Aucune version 4 n'a été produite.</strong> La numérotation
+        passe de la V3.1 (13 août) à la V5 (19 août) : la période intermédiaire
+        a été consacrée à l'outillage de l'administration, livré en huit lots
+        successifs sans libellé de version. Ce saut est intentionnel et ne
+        correspond à aucune livraison manquante.
+      </p>
+      <p>
+        <strong>La V7 rassemble six livraisons.</strong> Tout ce qui suit la V6
+        formait une même étape de maturité, mais était arrivé par lots
+        successifs étalés sur trois semaines. Ces lots sont devenus les
+        sous-parties V7.1 à V7.6, et leurs fiches ont été renumérotées en
+        V7-01 à V7-22, dans l'ordre chronologique.
+      </p>
+      <p>
+        <strong>Les références antérieures restent lisibles.</strong> Chaque
+        fiche porte son ancien code sous le nouveau (<code>ex-L22-01</code>),
+        de sorte qu'une citation faite avant cette réorganisation reste
+        retrouvable. Les fiches des versions V1 à V6 n'ont pas bougé.
       </p>
     </div>
   </section>
@@ -1702,31 +1817,31 @@
       </div>
       <div class="trace-row">
         <span>#22</span>
-        <span>Comptes participants et identité visuelle &mdash; L22-01 à L22-07. Migrations base 004 et 005.</span>
+        <span>V7.1 &mdash; Comptes participants et identité visuelle, V7-01 à V7-07. Migrations base 004 et 005.</span>
       </div>
       <div class="trace-row">
         <span>#23</span>
-        <span>Continuité de service &mdash; L23-01 et L23-02.</span>
+        <span>V7.2 &mdash; Continuité de service, V7-08 et V7-09.</span>
       </div>
       <div class="trace-row">
         <span>#24</span>
-        <span>Confidentialité des dossiers &mdash; L24-01 à L24-03.</span>
+        <span>V7.3 &mdash; Confidentialité des dossiers, V7-10 à V7-12.</span>
       </div>
       <div class="trace-row">
         <span>Exploitation</span>
-        <span>Mise en service sur le domaine de l'association &mdash; MES-01 et MES-02. Sans modification du code.</span>
+        <span>V7.4 &mdash; Mise en service sur le domaine de l'association, V7-13 et V7-14. Sans modification du code.</span>
       </div>
       <div class="trace-row">
         <span>#25</span>
-        <span>Allègement du parcours d'arrivée &mdash; L25-01 à L25-03.</span>
+        <span>V7.5, première partie &mdash; Allègement du parcours d'arrivée, V7-15 à V7-17.</span>
       </div>
       <div class="trace-row">
         <span>#26</span>
-        <span>Identité par l'e-mail et rappel à un mois &mdash; L26-01 à L26-04. Migration base 006.</span>
+        <span>V7.5, seconde partie &mdash; Identité par l'e-mail et rappel à un mois, V7-18 à V7-21. Migration base 006.</span>
       </div>
       <div class="trace-row">
         <span>#27</span>
-        <span>Fiabilité de la réinstallation &mdash; L27-01. Sans effet sur le produit en service.</span>
+        <span>V7.6 &mdash; Fiabilité de la réinstallation, V7-22. Sans effet sur le produit en service.</span>
       </div>
     </div>
   </section>
@@ -1736,7 +1851,7 @@
     de tests automatisés. Toutes les fonctionnalités décrites sont en
     production, à l'exception de l'import CSV (V5-04), retiré. Les dates des
     livraisons sont celles de l'intégration du code, qui peuvent précéder de peu
-    leur mise en ligne. Mis à jour le 21 septembre 2026.
+    leur mise en ligne. Mis à jour le 23 septembre 2026 : regroupement sous la V7 de tout ce qui suit la V6.
   </footer>
 
 </div>
